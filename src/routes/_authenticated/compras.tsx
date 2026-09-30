@@ -48,11 +48,16 @@ function Compras() {
       if (!itemId || !Number.isInteger(amount) || amount <= 0) throw new Error("Informe uma quantidade inteira maior que zero.");
       const supplier = suppliers.find((s) => s.id === supplierId);
       const details = [supplier ? `Fornecedor: ${supplier.name}` : "", note.trim()].filter(Boolean).join(" · ");
-      const { error } = await supabase.rpc("receive_purchase", {
-        p_item_id: itemId,
-        p_qty: amount,
-        p_note: details || null,
-      });
+      const { error } = details
+        ? await supabase.rpc("receive_purchase", {
+            p_item_id: itemId,
+            p_qty: amount,
+            p_note: details,
+          })
+        : await supabase.rpc("receive_purchase", {
+            p_item_id: itemId,
+            p_qty: amount,
+          });
       if (error) throw error;
       return amount;
     },
