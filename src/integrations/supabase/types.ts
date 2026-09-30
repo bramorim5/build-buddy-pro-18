@@ -226,6 +226,10 @@ export type Database = {
         Args: { p_item_id: string; p_qty: number; p_user: string }
         Returns: undefined
       }
+      receive_purchase: {
+        Args: { p_item_id: string; p_note?: string; p_qty: number }
+        Returns: undefined
+      }
     }
     Enums: {
       item_type: "material" | "submontagem" | "produto"
