@@ -222,6 +222,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      adjust_stock: {
+        Args: { p_delta: number; p_item_id: string; p_note?: string }
+        Returns: undefined
+      }
       assemble: {
         Args: { p_item_id: string; p_qty: number; p_user: string }
         Returns: undefined
