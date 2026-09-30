@@ -14,16 +14,221 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      bom_lines: {
+        Row: {
+          child_id: string
+          id: string
+          parent_id: string
+          quantity: number
+        }
+        Insert: {
+          child_id: string
+          id?: string
+          parent_id: string
+          quantity?: number
+        }
+        Update: {
+          child_id?: string
+          id?: string
+          parent_id?: string
+          quantity?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bom_lines_child_id_fkey"
+            columns: ["child_id"]
+            isOneToOne: false
+            referencedRelation: "items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bom_lines_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      item_suppliers: {
+        Row: {
+          id: string
+          is_primary: boolean
+          item_id: string
+          lead_time: string | null
+          supplier_id: string
+          unit_cost: number | null
+        }
+        Insert: {
+          id?: string
+          is_primary?: boolean
+          item_id: string
+          lead_time?: string | null
+          supplier_id: string
+          unit_cost?: number | null
+        }
+        Update: {
+          id?: string
+          is_primary?: boolean
+          item_id?: string
+          lead_time?: string | null
+          supplier_id?: string
+          unit_cost?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "item_suppliers_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "item_suppliers_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      items: {
+        Row: {
+          code: string
+          created_at: string
+          description: string | null
+          id: string
+          item_type: Database["public"]["Enums"]["item_type"]
+          min_quantity: number
+          name: string
+          photo_url: string | null
+          product_line: string | null
+          quantity: number
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          item_type?: Database["public"]["Enums"]["item_type"]
+          min_quantity?: number
+          name: string
+          photo_url?: string | null
+          product_line?: string | null
+          quantity?: number
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          item_type?: Database["public"]["Enums"]["item_type"]
+          min_quantity?: number
+          name?: string
+          photo_url?: string | null
+          product_line?: string | null
+          quantity?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      movements: {
+        Row: {
+          created_at: string
+          delta: number
+          id: string
+          item_id: string
+          kind: string
+          note: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          delta: number
+          id?: string
+          item_id: string
+          kind: string
+          note?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          delta?: number
+          id?: string
+          item_id?: string
+          kind?: string
+          note?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "movements_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          id: string
+          name: string | null
+        }
+        Insert: {
+          created_at?: string
+          id: string
+          name?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string | null
+        }
+        Relationships: []
+      }
+      suppliers: {
+        Row: {
+          contact: string | null
+          created_at: string
+          id: string
+          name: string
+          notes: string | null
+          phone: string | null
+        }
+        Insert: {
+          contact?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          notes?: string | null
+          phone?: string | null
+        }
+        Update: {
+          contact?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          notes?: string | null
+          phone?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      assemble: {
+        Args: { p_item_id: string; p_qty: number; p_user: string }
+        Returns: undefined
+      }
     }
     Enums: {
-      [_ in never]: never
+      item_type: "material" | "submontagem" | "produto"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +355,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      item_type: ["material", "submontagem", "produto"],
+    },
   },
 } as const
