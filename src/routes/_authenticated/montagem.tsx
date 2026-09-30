@@ -18,6 +18,8 @@ export const Route = createFileRoute("/_authenticated/montagem")({
       { name: "description", content: "Monte submontagens e produtos com baixa automática dos componentes." },
       { property: "og:title", content: "Montagem — Technolife Estoque" },
       { property: "og:description", content: "Monte submontagens e produtos com baixa automática dos componentes." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: Montagem,
@@ -25,14 +27,18 @@ export const Route = createFileRoute("/_authenticated/montagem")({
 
 function Montagem() {
   const qc = useQueryClient();
-  const { data: items = [] } = useQuery({ queryKey: ["items"], queryFn: fetchItems });
-  const { data: bom = [] } = useQuery({ queryKey: ["bom"], queryFn: fetchBom });
+  const itemsQuery = useQuery({ queryKey: ["items"], queryFn: fetchItems });
+  const bomQuery = useQuery({ queryKey: ["bom"], queryFn: fetchBom });
+  const items = itemsQuery.data ?? [];
+  const bom = bomQuery.data ?? [];
   const [itemId, setItemId] = useState("");
   const [qty, setQty] = useState("1");
   const [completed, setCompleted] = useState<string | null>(null);
   const itemMap = new Map(items.map((i) => [i.id, i]));
   const { byParent } = bomIndex(bom);
   const candidates = items.filter((i) => (byParent.get(i.id)?.length ?? 0) > 0);
+  const products = candidates.filter((item) => item.item_type === "produto");
+  const subassemblies = candidates.filter((item) => item.item_type === "submontagem");
   const selected = itemMap.get(itemId);
   const lines = byParent.get(itemId) ?? [];
   const available = itemId ? assembleNow(itemId, itemMap, byParent) : 0;
@@ -64,6 +70,15 @@ function Montagem() {
         <p className="mt-1 text-sm text-muted-foreground">Os componentes saem do estoque e o item montado entra automaticamente.</p>
       </div>
 
+      {itemsQuery.isLoading || bomQuery.isLoading ? (
+        <p className="py-10 text-sm text-muted-foreground">Carregando opções de montagem...</p>
+      ) : itemsQuery.error || bomQuery.error ? (
+        <div role="alert" className="panel p-6">
+          <p className="font-semibold">Não foi possível carregar a montagem.</p>
+          <p className="mt-1 text-sm text-muted-foreground">Tente novamente. Se o erro continuar, saia e entre novamente.</p>
+          <Button className="mt-4" variant="outline" onClick={() => { itemsQuery.refetch(); bomQuery.refetch(); }}>Tentar novamente</Button>
+        </div>
+      ) : (
       <div className="grid gap-6 lg:grid-cols-[minmax(320px,1fr)_minmax(0,2fr)]">
         <form className="panel space-y-5 p-6" onSubmit={(e) => { e.preventDefault(); assemble.mutate(); }}>
           <div className="flex items-center gap-2 border-b border-border pb-4">
@@ -75,7 +90,10 @@ function Montagem() {
             <Select value={itemId} onValueChange={(value) => { setItemId(value); setCompleted(null); }}>
               <SelectTrigger><SelectValue placeholder="Selecione uma submontagem ou produto" /></SelectTrigger>
               <SelectContent>
-                {candidates.map((item) => <SelectItem key={item.id} value={item.id}>{item.code} — {item.name}</SelectItem>)}
+                {products.length > 0 && <p className="px-2 py-1.5 text-xs font-semibold uppercase text-muted-foreground">Produtos finais</p>}
+                {products.map((item) => <SelectItem key={item.id} value={item.id}>{item.code} — {item.name}</SelectItem>)}
+                {subassemblies.length > 0 && <p className="px-2 py-1.5 text-xs font-semibold uppercase text-muted-foreground">Submontagens</p>}
+                {subassemblies.map((item) => <SelectItem key={item.id} value={item.id}>{item.code} — {item.name}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
@@ -85,12 +103,12 @@ function Montagem() {
           </div>
           {selected && (
             <div className="rounded-md border border-border bg-muted p-4">
-              <p className="text-xs uppercase text-muted-foreground">Máximo com componentes prontos</p>
+              <p className="text-xs uppercase text-muted-foreground">Disponível para montar agora</p>
               <p className="mt-1 font-display text-3xl font-bold">{available}</p>
             </div>
           )}
           {selected && amount > available && (
-            <p className="flex gap-2 text-sm text-destructive"><AlertTriangle className="mt-0.5 size-4 shrink-0" />A quantidade supera o estoque direto dos componentes.</p>
+            <p className="flex gap-2 text-sm text-destructive"><AlertTriangle className="mt-0.5 size-4 shrink-0" />Faltam componentes para montar esta quantidade.</p>
           )}
           <Button type="submit" className="w-full" disabled={!selected || amount <= 0 || amount > available || assemble.isPending}>
             <Factory className="size-4" />{assemble.isPending ? "Montando..." : "Confirmar montagem"}
@@ -120,6 +138,7 @@ function Montagem() {
                   <div className="text-right text-sm">
                     <p><b>{required}</b> necessários</p>
                     <p className="text-muted-foreground">{child.quantity} em estoque</p>
+                    {!enough && <p className="font-medium text-destructive">Faltam {required - child.quantity}</p>}
                   </div>
                   <Badge variant={enough ? "outline" : "destructive"}>{enough ? "Disponível" : "Falta"}</Badge>
                 </div>
@@ -128,6 +147,7 @@ function Montagem() {
           )}
         </section>
       </div>
+      )}
     </div>
   );
 }

@@ -1,7 +1,9 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
-import { Search } from "lucide-react";
+import { Plus, Search } from "lucide-react";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import {
   fetchItems,
   stockStatus,
@@ -11,6 +13,10 @@ import {
 import { ItemPhoto } from "@/components/inventory/ItemPhoto";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/itens")({
@@ -26,6 +32,8 @@ export const Route = createFileRoute("/_authenticated/itens")({
         property: "og:description",
         content: "Todos os materiais, submontagens e produtos com quantidade em estoque.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: Itens,
@@ -39,10 +47,50 @@ const filters: Array<{ value: "todos" | ItemType; label: string }> = [
 ];
 
 function Itens() {
+  const qc = useQueryClient();
+  const navigate = useNavigate();
   const { data: items = [], isLoading } = useQuery({ queryKey: ["items"], queryFn: fetchItems });
   const [q, setQ] = useState("");
   const [type, setType] = useState<"todos" | ItemType>("todos");
   const [onlyAlerts, setOnlyAlerts] = useState(false);
+  const [open, setOpen] = useState(false);
+  const [code, setCode] = useState("");
+  const [name, setName] = useState("");
+  const [itemType, setItemType] = useState<ItemType>("material");
+  const [productLine, setProductLine] = useState("");
+  const [quantity, setQuantity] = useState("0");
+  const [minQuantity, setMinQuantity] = useState("10");
+
+  const createItem = useMutation({
+    mutationFn: async () => {
+      const initial = Number(quantity);
+      const minimum = Number(minQuantity);
+      if (!code.trim() || !name.trim()) throw new Error("Informe o código e o nome.");
+      if (!Number.isInteger(initial) || initial < 0 || !Number.isInteger(minimum) || minimum < 0) {
+        throw new Error("Estoque e limite devem ser números inteiros maiores ou iguais a zero.");
+      }
+      const productLineValue = productLine.trim();
+      const baseInput = {
+        p_code: code.trim(),
+        p_name: name.trim(),
+        p_item_type: itemType,
+        p_initial_quantity: initial,
+        p_min_quantity: minimum,
+      };
+      const { data, error } = productLineValue
+        ? await supabase.rpc("create_inventory_item", { ...baseInput, p_product_line: productLineValue })
+        : await supabase.rpc("create_inventory_item", baseInput);
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: async (id) => {
+      await qc.invalidateQueries({ queryKey: ["items"] });
+      setOpen(false);
+      toast.success("Item cadastrado");
+      navigate({ to: "/itens/$id", params: { id } });
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
 
   const list = useMemo(() => {
     const term = q.trim().toLowerCase();
@@ -60,11 +108,32 @@ function Itens() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Itens</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          {items.length} cadastrados — peças, submontagens e produtos finais.
-        </p>
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold">Itens</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {items.length} cadastrados — peças, submontagens e produtos finais.
+          </p>
+        </div>
+        <Dialog open={open} onOpenChange={setOpen}>
+          <DialogTrigger asChild><Button><Plus />Novo item</Button></DialogTrigger>
+          <DialogContent className="max-w-xl">
+            <DialogHeader><DialogTitle>Cadastrar item</DialogTitle></DialogHeader>
+            <form className="space-y-4" onSubmit={(event) => { event.preventDefault(); createItem.mutate(); }}>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2"><Label htmlFor="new-code">Código</Label><Input id="new-code" value={code} onChange={(event) => setCode(event.target.value)} required /></div>
+                <div className="space-y-2"><Label>Tipo</Label><Select value={itemType} onValueChange={(value) => setItemType(value as ItemType)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="material">Peça / material</SelectItem><SelectItem value="submontagem">Submontagem</SelectItem><SelectItem value="produto">Produto final</SelectItem></SelectContent></Select></div>
+              </div>
+              <div className="space-y-2"><Label htmlFor="new-name">Nome</Label><Input id="new-name" value={name} onChange={(event) => setName(event.target.value)} required /></div>
+              <div className="space-y-2"><Label htmlFor="new-line">Linha de produto</Label><Input id="new-line" value={productLine} onChange={(event) => setProductLine(event.target.value)} /></div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2"><Label htmlFor="new-quantity">Estoque inicial</Label><Input id="new-quantity" type="number" min={0} step={1} value={quantity} onChange={(event) => setQuantity(event.target.value)} /></div>
+                <div className="space-y-2"><Label htmlFor="new-min">Limite de aviso</Label><Input id="new-min" type="number" min={0} step={1} value={minQuantity} onChange={(event) => setMinQuantity(event.target.value)} /></div>
+              </div>
+              <Button type="submit" disabled={createItem.isPending}>{createItem.isPending ? "Cadastrando..." : "Cadastrar item"}</Button>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
 
       <div className="flex flex-wrap items-center gap-3">

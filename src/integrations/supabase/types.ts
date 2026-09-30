@@ -230,6 +230,17 @@ export type Database = {
         Args: { p_item_id: string; p_qty: number; p_user: string }
         Returns: undefined
       }
+      create_inventory_item: {
+        Args: {
+          p_code: string
+          p_initial_quantity?: number
+          p_item_type: Database["public"]["Enums"]["item_type"]
+          p_min_quantity?: number
+          p_name: string
+          p_product_line?: string
+        }
+        Returns: string
+      }
       receive_purchase: {
         Args: { p_item_id: string; p_note?: string; p_qty: number }
         Returns: undefined
