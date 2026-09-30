@@ -14,6 +14,7 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedItensRouteImport } from './routes/_authenticated/itens'
 import { Route as AuthenticatedPainelRouteImport } from './routes/_authenticated/painel'
+import { Route as AuthenticatedItensIdRouteImport } from './routes/_authenticated/itens_.$id'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -39,18 +40,25 @@ const AuthenticatedPainelRoute = AuthenticatedPainelRouteImport.update({
   path: '/painel',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedItensIdRoute = AuthenticatedItensIdRouteImport.update({
+  id: '/itens_/$id',
+  path: '/itens/$id',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/itens': typeof AuthenticatedItensRoute
   '/painel': typeof AuthenticatedPainelRoute
+  '/itens/$id': typeof AuthenticatedItensIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/itens': typeof AuthenticatedItensRoute
   '/painel': typeof AuthenticatedPainelRoute
+  '/itens/$id': typeof AuthenticatedItensIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -59,12 +67,13 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/_authenticated/itens': typeof AuthenticatedItensRoute
   '/_authenticated/painel': typeof AuthenticatedPainelRoute
+  '/_authenticated/itens_/$id': typeof AuthenticatedItensIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/itens' | '/painel'
+  fullPaths: '/' | '/auth' | '/itens' | '/painel' | '/itens/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/itens' | '/painel'
+  to: '/' | '/auth' | '/itens' | '/painel' | '/itens/$id'
   id:
     | '__root__'
     | '/'
@@ -72,6 +81,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/_authenticated/itens'
     | '/_authenticated/painel'
+    | '/_authenticated/itens_/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -117,17 +127,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPainelRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/itens_/$id': {
+      id: '/_authenticated/itens_/$id'
+      path: '/itens/$id'
+      fullPath: '/itens/$id'
+      preLoaderRoute: typeof AuthenticatedItensIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedItensRoute: typeof AuthenticatedItensRoute
   AuthenticatedPainelRoute: typeof AuthenticatedPainelRoute
+  AuthenticatedItensIdRoute: typeof AuthenticatedItensIdRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedItensRoute: AuthenticatedItensRoute,
   AuthenticatedPainelRoute: AuthenticatedPainelRoute,
+  AuthenticatedItensIdRoute: AuthenticatedItensIdRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
