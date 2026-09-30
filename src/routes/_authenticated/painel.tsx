@@ -113,12 +113,11 @@ function Painel() {
           value={items.filter((i) => i.item_type === "submontagem").length}
         />
         <Stat icon={Factory} label="Produtos finais" value={produtos.length} />
-        <Stat
-          icon={AlertTriangle}
-          label="Precisam de compra"
-          value={alerts.length}
-          tone={alerts.length ? "warn" : undefined}
-        />
+        {alerts.length ? (
+          <Stat icon={AlertTriangle} label="Precisam de compra" value={alerts.length} tone="warn" />
+        ) : (
+          <Stat icon={AlertTriangle} label="Precisam de compra" value={0} />
+        )}
       </div>
 
       <section className="grid gap-6 lg:grid-cols-5">

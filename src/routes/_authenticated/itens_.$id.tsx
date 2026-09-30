@@ -25,6 +25,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import type { Database } from "@/integrations/supabase/types";
 
 export const Route = createFileRoute("/_authenticated/itens_/$id")({
   head: () => ({
@@ -142,7 +143,7 @@ function Detalhe() {
   const [uploading, setUploading] = useState(false);
 
   const save = useMutation({
-    mutationFn: async (patch: Record<string, unknown>) => {
+    mutationFn: async (patch: Database["public"]["Tables"]["items"]["Update"]) => {
       const { error } = await supabase.from("items").update(patch).eq("id", id);
       if (error) throw error;
     },
@@ -155,21 +156,12 @@ function Detalhe() {
 
   const recordAdjustment = useMutation({
     mutationFn: async (delta: number) => {
-      const { data: auth, error: authError } = await supabase.auth.getUser();
-      if (authError || !auth.user) throw new Error("Sua sessão expirou. Entre novamente.");
-      const { error: itemError } = await supabase
-        .from("items")
-        .update({ quantity: item.quantity + delta })
-        .eq("id", id);
-      if (itemError) throw itemError;
-      const { error: movementError } = await supabase.from("movements").insert({
-        item_id: id,
-        delta,
-        kind: "ajuste",
-        note: "Ajuste manual de inventário",
-        user_id: auth.user.id,
+      const { error } = await supabase.rpc("adjust_stock", {
+        p_item_id: id,
+        p_delta: delta,
+        p_note: "Ajuste manual de inventário",
       });
-      if (movementError) throw movementError;
+      if (error) throw error;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["items"] });
