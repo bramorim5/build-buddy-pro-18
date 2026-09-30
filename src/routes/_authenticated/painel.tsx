@@ -18,6 +18,8 @@ export const Route = createFileRoute("/_authenticated/painel")({
       { name: "description", content: "Alertas de compra e capacidade de produção atual." },
       { property: "og:title", content: "Painel — Technolife Estoque" },
       { property: "og:description", content: "Alertas de compra e capacidade de produção atual." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: Painel,

@@ -47,6 +47,8 @@ export const Route = createFileRoute("/_authenticated/itens_/$id")({
       { name: "description", content: "Estrutura, fornecedores e movimentações do item." },
       { property: "og:title", content: "Detalhe do item — Technolife Estoque" },
       { property: "og:description", content: "Estrutura, fornecedores e movimentações do item." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: Detalhe,

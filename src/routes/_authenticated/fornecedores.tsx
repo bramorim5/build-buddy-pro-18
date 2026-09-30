@@ -31,6 +31,8 @@ export const Route = createFileRoute("/_authenticated/fornecedores")({
       { name: "description", content: "Fornecedores e componentes fornecidos para a produção." },
       { property: "og:title", content: "Fornecedores — Technolife Estoque" },
       { property: "og:description", content: "Fornecedores e componentes fornecidos para a produção." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: Fornecedores,

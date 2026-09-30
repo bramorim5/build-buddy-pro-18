@@ -16,6 +16,8 @@ export const Route = createFileRoute("/auth")({
         property: "og:description",
         content: "Acesse o controle de estoque e produção da Technolife.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: AuthPage,

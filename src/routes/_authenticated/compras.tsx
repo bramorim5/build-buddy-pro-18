@@ -23,6 +23,8 @@ export const Route = createFileRoute("/_authenticated/compras")({
       { name: "description", content: "Registre a entrada de componentes comprados no estoque." },
       { property: "og:title", content: "Compras — Technolife Estoque" },
       { property: "og:description", content: "Registre a entrada de componentes comprados no estoque." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: Compras,

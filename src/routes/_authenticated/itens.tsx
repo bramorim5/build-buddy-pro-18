@@ -32,6 +32,8 @@ export const Route = createFileRoute("/_authenticated/itens")({
         property: "og:description",
         content: "Todos os materiais, submontagens e produtos com quantidade em estoque.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: Itens,
@@ -67,20 +69,16 @@ function Itens() {
       if (!Number.isInteger(initial) || initial < 0 || !Number.isInteger(minimum) || minimum < 0) {
         throw new Error("Estoque e limite devem ser números inteiros maiores ou iguais a zero.");
       }
-      const { data, error } = await supabase
-        .from("items")
-        .insert({
-          code: code.trim(),
-          name: name.trim(),
-          item_type: itemType,
-          product_line: productLine.trim() || null,
-          quantity: initial,
-          min_quantity: minimum,
-        })
-        .select("id")
-        .single();
+      const { data, error } = await supabase.rpc("create_inventory_item", {
+        p_code: code.trim(),
+        p_name: name.trim(),
+        p_item_type: itemType,
+        p_product_line: productLine.trim() || undefined,
+        p_initial_quantity: initial,
+        p_min_quantity: minimum,
+      });
       if (error) throw error;
-      return data.id;
+      return data;
     },
     onSuccess: async (id) => {
       await qc.invalidateQueries({ queryKey: ["items"] });

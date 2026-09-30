@@ -17,6 +17,8 @@ export const Route = createFileRoute("/")({
         content:
           "Estruturas de produto, estoque de componentes, alertas de compra e montagens que descontam automaticamente.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: Landing,

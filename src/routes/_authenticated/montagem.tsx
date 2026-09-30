@@ -18,6 +18,8 @@ export const Route = createFileRoute("/_authenticated/montagem")({
       { name: "description", content: "Monte submontagens e produtos com baixa automática dos componentes." },
       { property: "og:title", content: "Montagem — Technolife Estoque" },
       { property: "og:description", content: "Monte submontagens e produtos com baixa automática dos componentes." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: Montagem,
