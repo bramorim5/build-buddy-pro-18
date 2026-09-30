@@ -69,14 +69,17 @@ function Itens() {
       if (!Number.isInteger(initial) || initial < 0 || !Number.isInteger(minimum) || minimum < 0) {
         throw new Error("Estoque e limite devem ser números inteiros maiores ou iguais a zero.");
       }
-      const { data, error } = await supabase.rpc("create_inventory_item", {
+      const productLineValue = productLine.trim();
+      const baseInput = {
         p_code: code.trim(),
         p_name: name.trim(),
         p_item_type: itemType,
-        p_product_line: productLine.trim() || undefined,
         p_initial_quantity: initial,
         p_min_quantity: minimum,
-      });
+      };
+      const { data, error } = productLineValue
+        ? await supabase.rpc("create_inventory_item", { ...baseInput, p_product_line: productLineValue })
+        : await supabase.rpc("create_inventory_item", baseInput);
       if (error) throw error;
       return data;
     },
