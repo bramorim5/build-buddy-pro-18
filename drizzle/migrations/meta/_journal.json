@@ -1,0 +1,20 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1790797759694,
+      "tag": "0000_create_inventory_schema",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1790797835490,
+      "tag": "0001_item_photo_storage_policies",
+      "breakpoints": true
+    }
+  ]
+}
