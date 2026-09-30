@@ -153,6 +153,32 @@ function Detalhe() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const recordAdjustment = useMutation({
+    mutationFn: async (delta: number) => {
+      const { data: auth, error: authError } = await supabase.auth.getUser();
+      if (authError || !auth.user) throw new Error("Sua sessão expirou. Entre novamente.");
+      const { error: itemError } = await supabase
+        .from("items")
+        .update({ quantity: item.quantity + delta })
+        .eq("id", id);
+      if (itemError) throw itemError;
+      const { error: movementError } = await supabase.from("movements").insert({
+        item_id: id,
+        delta,
+        kind: "ajuste",
+        note: "Ajuste manual de inventário",
+        user_id: auth.user.id,
+      });
+      if (movementError) throw movementError;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["items"] });
+      qc.invalidateQueries({ queryKey: ["movements", id] });
+      toast.success("Estoque ajustado");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const setBomQty = useMutation({
     mutationFn: async ({ lineId, quantity }: { lineId: string; quantity: number }) => {
       const { error } = await supabase.from("bom_lines").update({ quantity }).eq("id", lineId);
@@ -242,6 +268,26 @@ function Detalhe() {
             <div className="panel p-4">
               <p className="text-xs uppercase text-muted-foreground">Em estoque</p>
               <p className="font-display text-3xl font-bold">{item.quantity}</p>
+              <div className="mt-2 flex gap-1">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={item.quantity <= 0 || recordAdjustment.isPending}
+                  onClick={() => recordAdjustment.mutate(-1)}
+                  aria-label="Retirar uma unidade"
+                >
+                  −
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={recordAdjustment.isPending}
+                  onClick={() => recordAdjustment.mutate(1)}
+                  aria-label="Adicionar uma unidade"
+                >
+                  +
+                </Button>
+              </div>
             </div>
             <div className="panel p-4">
               <Label htmlFor="min" className="text-xs uppercase text-muted-foreground">
