@@ -12,7 +12,10 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AuthenticatedComprasRouteImport } from './routes/_authenticated/compras'
+import { Route as AuthenticatedFornecedoresRouteImport } from './routes/_authenticated/fornecedores'
 import { Route as AuthenticatedItensRouteImport } from './routes/_authenticated/itens'
+import { Route as AuthenticatedMontagemRouteImport } from './routes/_authenticated/montagem'
 import { Route as AuthenticatedPainelRouteImport } from './routes/_authenticated/painel'
 import { Route as AuthenticatedItensIdRouteImport } from './routes/_authenticated/itens_.$id'
 
@@ -30,9 +33,25 @@ const AuthRoute = AuthRouteImport.update({
   path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedComprasRoute = AuthenticatedComprasRouteImport.update({
+  id: '/compras',
+  path: '/compras',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedFornecedoresRoute =
+  AuthenticatedFornecedoresRouteImport.update({
+    id: '/fornecedores',
+    path: '/fornecedores',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedItensRoute = AuthenticatedItensRouteImport.update({
   id: '/itens',
   path: '/itens',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedMontagemRoute = AuthenticatedMontagemRouteImport.update({
+  id: '/montagem',
+  path: '/montagem',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedPainelRoute = AuthenticatedPainelRouteImport.update({
@@ -49,14 +68,20 @@ const AuthenticatedItensIdRoute = AuthenticatedItensIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/compras': typeof AuthenticatedComprasRoute
+  '/fornecedores': typeof AuthenticatedFornecedoresRoute
   '/itens': typeof AuthenticatedItensRoute
+  '/montagem': typeof AuthenticatedMontagemRoute
   '/painel': typeof AuthenticatedPainelRoute
   '/itens/$id': typeof AuthenticatedItensIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/compras': typeof AuthenticatedComprasRoute
+  '/fornecedores': typeof AuthenticatedFornecedoresRoute
   '/itens': typeof AuthenticatedItensRoute
+  '/montagem': typeof AuthenticatedMontagemRoute
   '/painel': typeof AuthenticatedPainelRoute
   '/itens/$id': typeof AuthenticatedItensIdRoute
 }
@@ -65,21 +90,43 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/_authenticated/compras': typeof AuthenticatedComprasRoute
+  '/_authenticated/fornecedores': typeof AuthenticatedFornecedoresRoute
   '/_authenticated/itens': typeof AuthenticatedItensRoute
+  '/_authenticated/montagem': typeof AuthenticatedMontagemRoute
   '/_authenticated/painel': typeof AuthenticatedPainelRoute
   '/_authenticated/itens_/$id': typeof AuthenticatedItensIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/itens' | '/painel' | '/itens/$id'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/compras'
+    | '/fornecedores'
+    | '/itens'
+    | '/montagem'
+    | '/painel'
+    | '/itens/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/itens' | '/painel' | '/itens/$id'
+  to:
+    | '/'
+    | '/auth'
+    | '/compras'
+    | '/fornecedores'
+    | '/itens'
+    | '/montagem'
+    | '/painel'
+    | '/itens/$id'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
     | '/auth'
+    | '/_authenticated/compras'
+    | '/_authenticated/fornecedores'
     | '/_authenticated/itens'
+    | '/_authenticated/montagem'
     | '/_authenticated/painel'
     | '/_authenticated/itens_/$id'
   fileRoutesById: FileRoutesById
@@ -113,11 +160,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/compras': {
+      id: '/_authenticated/compras'
+      path: '/compras'
+      fullPath: '/compras'
+      preLoaderRoute: typeof AuthenticatedComprasRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/fornecedores': {
+      id: '/_authenticated/fornecedores'
+      path: '/fornecedores'
+      fullPath: '/fornecedores'
+      preLoaderRoute: typeof AuthenticatedFornecedoresRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/itens': {
       id: '/_authenticated/itens'
       path: '/itens'
       fullPath: '/itens'
       preLoaderRoute: typeof AuthenticatedItensRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/montagem': {
+      id: '/_authenticated/montagem'
+      path: '/montagem'
+      fullPath: '/montagem'
+      preLoaderRoute: typeof AuthenticatedMontagemRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/painel': {
@@ -138,13 +206,19 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedComprasRoute: typeof AuthenticatedComprasRoute
+  AuthenticatedFornecedoresRoute: typeof AuthenticatedFornecedoresRoute
   AuthenticatedItensRoute: typeof AuthenticatedItensRoute
+  AuthenticatedMontagemRoute: typeof AuthenticatedMontagemRoute
   AuthenticatedPainelRoute: typeof AuthenticatedPainelRoute
   AuthenticatedItensIdRoute: typeof AuthenticatedItensIdRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedComprasRoute: AuthenticatedComprasRoute,
+  AuthenticatedFornecedoresRoute: AuthenticatedFornecedoresRoute,
   AuthenticatedItensRoute: AuthenticatedItensRoute,
+  AuthenticatedMontagemRoute: AuthenticatedMontagemRoute,
   AuthenticatedPainelRoute: AuthenticatedPainelRoute,
   AuthenticatedItensIdRoute: AuthenticatedItensIdRoute,
 }
