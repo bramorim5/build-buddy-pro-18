@@ -1,8 +1,8 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
-import { ArrowLeft, Upload, ChevronRight } from "lucide-react";
+import { ArrowLeft, Upload, ChevronRight, Pencil, Plus, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   fetchItems,
@@ -24,6 +24,19 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 import type { Database } from "@/integrations/supabase/types";
 
@@ -111,6 +124,7 @@ function BomTree({
 function Detalhe() {
   const { id } = Route.useParams();
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const fileRef = useRef<HTMLInputElement>(null);
 
   const { data: items = [], isLoading } = useQuery({ queryKey: ["items"], queryFn: fetchItems });
@@ -141,6 +155,14 @@ function Detalhe() {
   const [desc, setDesc] = useState<string | null>(null);
   const [minQty, setMinQty] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [componentOpen, setComponentOpen] = useState(false);
+  const [editName, setEditName] = useState("");
+  const [editCode, setEditCode] = useState("");
+  const [editType, setEditType] = useState<Item["item_type"]>("material");
+  const [editLine, setEditLine] = useState("");
+  const [componentId, setComponentId] = useState("");
+  const [componentQty, setComponentQty] = useState("1");
 
   const save = useMutation({
     mutationFn: async (patch: Database["public"]["Tables"]["items"]["Update"]) => {
@@ -183,6 +205,57 @@ function Detalhe() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const addBomLine = useMutation({
+    mutationFn: async () => {
+      const quantity = Number(componentQty);
+      if (!componentId || !Number.isFinite(quantity) || quantity <= 0) {
+        throw new Error("Selecione um componente e informe uma quantidade maior que zero.");
+      }
+      const { error } = await supabase.from("bom_lines").insert({
+        parent_id: id,
+        child_id: componentId,
+        quantity,
+      });
+      if (error) throw error;
+    },
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ["bom"] });
+      setComponentId("");
+      setComponentQty("1");
+      setComponentOpen(false);
+      toast.success("Componente adicionado à estrutura");
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
+
+  const removeBomLine = useMutation({
+    mutationFn: async (lineId: string) => {
+      const { error } = await supabase.from("bom_lines").delete().eq("id", lineId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["bom"] });
+      toast.success("Componente retirado da estrutura");
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
+
+  const deleteItem = useMutation({
+    mutationFn: async () => {
+      if (linhas.length || usadoEm.length || fornecedores.length || movements.length) {
+        throw new Error("Este item possui estrutura, fornecedor ou histórico. Retire esses vínculos antes de excluí-lo.");
+      }
+      const { error } = await supabase.from("items").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ["items"] });
+      toast.success("Item excluído");
+      navigate({ to: "/itens" });
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
+
   async function uploadPhoto(file: File) {
     setUploading(true);
     try {
@@ -207,6 +280,16 @@ function Detalhe() {
   const fornecedores = itemSuppliers.filter((s) => s.item_id === item.id);
   const podeMontarAgora = assembleNow(item.id, map, byParent);
   const totalPossivel = buildableCount(item.id, map, byParent) - item.quantity;
+  const reachesItem = (candidateId: string, targetId: string, visited = new Set<string>()): boolean => {
+    if (candidateId === targetId) return true;
+    if (visited.has(candidateId)) return false;
+    visited.add(candidateId);
+    return (byParent.get(candidateId) ?? []).some((line) => reachesItem(line.child_id, targetId, visited));
+  };
+  const linkedIds = new Set(linhas.map((line) => line.child_id));
+  const componentOptions = items.filter(
+    (candidate) => candidate.id !== item.id && !linkedIds.has(candidate.id) && !reachesItem(candidate.id, item.id),
+  );
 
   return (
     <div className="space-y-8">
@@ -251,9 +334,31 @@ function Detalhe() {
               </Badge>
             )}
           </div>
-          <div>
-            <h1 className="text-3xl font-bold">{item.name}</h1>
-            <p className="text-code mt-1">{item.code}</p>
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <h1 className="text-3xl font-bold">{item.name}</h1>
+              <p className="text-code mt-1">{item.code}</p>
+            </div>
+            <div className="flex gap-2">
+              <Dialog open={editOpen} onOpenChange={setEditOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" onClick={() => { setEditName(item.name); setEditCode(item.code); setEditType(item.item_type); setEditLine(item.product_line ?? ""); }}><Pencil />Editar</Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader><DialogTitle>Editar item</DialogTitle></DialogHeader>
+                  <form className="space-y-4" onSubmit={(event) => { event.preventDefault(); save.mutate({ name: editName.trim(), code: editCode.trim(), item_type: editType, product_line: editLine.trim() || null }, { onSuccess: () => setEditOpen(false) }); }}>
+                    <div className="grid gap-4 sm:grid-cols-2"><div className="space-y-2"><Label htmlFor="edit-code">Código</Label><Input id="edit-code" value={editCode} onChange={(event) => setEditCode(event.target.value)} required /></div><div className="space-y-2"><Label>Tipo</Label><Select value={editType} onValueChange={(value) => setEditType(value as Item["item_type"])}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="material">Peça / material</SelectItem><SelectItem value="submontagem">Submontagem</SelectItem><SelectItem value="produto">Produto final</SelectItem></SelectContent></Select></div></div>
+                    <div className="space-y-2"><Label htmlFor="edit-name">Nome</Label><Input id="edit-name" value={editName} onChange={(event) => setEditName(event.target.value)} required /></div>
+                    <div className="space-y-2"><Label htmlFor="edit-line">Linha de produto</Label><Input id="edit-line" value={editLine} onChange={(event) => setEditLine(event.target.value)} /></div>
+                    <Button type="submit" disabled={save.isPending || !editName.trim() || !editCode.trim()}>{save.isPending ? "Salvando..." : "Salvar alterações"}</Button>
+                  </form>
+                </DialogContent>
+              </Dialog>
+              <AlertDialog>
+                <AlertDialogTrigger asChild><Button variant="destructive" size="icon" aria-label="Excluir item"><Trash2 /></Button></AlertDialogTrigger>
+                <AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Excluir {item.name}?</AlertDialogTitle><AlertDialogDescription>Esta ação é permanente. Itens vinculados a estruturas, fornecedores ou históricos não podem ser excluídos.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancelar</AlertDialogCancel><AlertDialogAction onClick={() => deleteItem.mutate()} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Excluir</AlertDialogAction></AlertDialogFooter></AlertDialogContent>
+              </AlertDialog>
+            </div>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-3">
@@ -340,14 +445,22 @@ function Detalhe() {
         </div>
       </div>
 
-      {linhas.length > 0 && (
-        <section className="panel">
-          <header className="border-b border-border px-5 py-4">
-            <h2 className="text-base font-semibold">Estrutura</h2>
-            <p className="text-sm text-muted-foreground">
-              Componentes diretos e, abaixo de cada um, as próprias submontagens.
-            </p>
+      <section className="panel">
+          <header className="flex flex-wrap items-center justify-between gap-4 border-b border-border px-5 py-4">
+            <div><h2 className="text-base font-semibold">Estrutura</h2><p className="text-sm text-muted-foreground">Componentes diretos e, abaixo de cada um, as próprias submontagens.</p></div>
+            <Dialog open={componentOpen} onOpenChange={setComponentOpen}>
+              <DialogTrigger asChild><Button size="sm"><Plus />Adicionar componente</Button></DialogTrigger>
+              <DialogContent>
+                <DialogHeader><DialogTitle>Adicionar à estrutura</DialogTitle></DialogHeader>
+                <form className="space-y-4" onSubmit={(event) => { event.preventDefault(); addBomLine.mutate(); }}>
+                  <div className="space-y-2"><Label>Peça ou submontagem</Label><Select value={componentId} onValueChange={setComponentId}><SelectTrigger><SelectValue placeholder="Selecione um item" /></SelectTrigger><SelectContent>{componentOptions.map((candidate) => <SelectItem key={candidate.id} value={candidate.id}>{candidate.code} — {candidate.name}</SelectItem>)}</SelectContent></Select></div>
+                  <div className="space-y-2"><Label htmlFor="component-qty">Quantidade por unidade</Label><Input id="component-qty" type="number" min="0.0001" step="any" value={componentQty} onChange={(event) => setComponentQty(event.target.value)} /></div>
+                  <Button type="submit" disabled={addBomLine.isPending || !componentId}>{addBomLine.isPending ? "Adicionando..." : "Adicionar componente"}</Button>
+                </form>
+              </DialogContent>
+            </Dialog>
           </header>
+          {linhas.length === 0 ? <p className="px-5 py-8 text-sm text-muted-foreground">A estrutura está vazia. Adicione a primeira peça ou submontagem.</p> : (
           <div className="divide-y divide-border">
             {linhas.map((line) => {
               const child = map.get(line.child_id);
@@ -381,6 +494,7 @@ function Detalhe() {
                         {child.quantity}
                       </b>
                     </span>
+                    <Button variant="ghost" size="icon" aria-label={`Retirar ${child.name} da estrutura`} onClick={() => removeBomLine.mutate(line.id)} disabled={removeBomLine.isPending}><Trash2 /></Button>
                   </div>
                   <BomTree
                     parentId={child.id}
@@ -394,8 +508,8 @@ function Detalhe() {
               );
             })}
           </div>
+          )}
         </section>
-      )}
 
       <div className="grid gap-6 lg:grid-cols-2">
         {usadoEm.length > 0 && (
