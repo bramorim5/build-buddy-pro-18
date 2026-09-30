@@ -29,6 +29,13 @@
       "when": 1790803872052,
       "tag": "0003_secure_stock_adjustment",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1790804365896,
+      "tag": "0004_create_inventory_item_atomically",
+      "breakpoints": true
     }
   ]
 }
