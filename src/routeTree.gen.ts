@@ -17,6 +17,7 @@ import { Route as AuthenticatedFornecedoresRouteImport } from './routes/_authent
 import { Route as AuthenticatedItensRouteImport } from './routes/_authenticated/itens'
 import { Route as AuthenticatedMontagemRouteImport } from './routes/_authenticated/montagem'
 import { Route as AuthenticatedPainelRouteImport } from './routes/_authenticated/painel'
+import { Route as AuthenticatedVendasRouteImport } from './routes/_authenticated/vendas'
 import { Route as AuthenticatedItensIdRouteImport } from './routes/_authenticated/itens_.$id'
 
 const IndexRoute = IndexRouteImport.update({
@@ -59,6 +60,11 @@ const AuthenticatedPainelRoute = AuthenticatedPainelRouteImport.update({
   path: '/painel',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedVendasRoute = AuthenticatedVendasRouteImport.update({
+  id: '/vendas',
+  path: '/vendas',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedItensIdRoute = AuthenticatedItensIdRouteImport.update({
   id: '/itens_/$id',
   path: '/itens/$id',
@@ -73,6 +79,7 @@ export interface FileRoutesByFullPath {
   '/itens': typeof AuthenticatedItensRoute
   '/montagem': typeof AuthenticatedMontagemRoute
   '/painel': typeof AuthenticatedPainelRoute
+  '/vendas': typeof AuthenticatedVendasRoute
   '/itens/$id': typeof AuthenticatedItensIdRoute
 }
 export interface FileRoutesByTo {
@@ -83,6 +90,7 @@ export interface FileRoutesByTo {
   '/itens': typeof AuthenticatedItensRoute
   '/montagem': typeof AuthenticatedMontagemRoute
   '/painel': typeof AuthenticatedPainelRoute
+  '/vendas': typeof AuthenticatedVendasRoute
   '/itens/$id': typeof AuthenticatedItensIdRoute
 }
 export interface FileRoutesById {
@@ -95,6 +103,7 @@ export interface FileRoutesById {
   '/_authenticated/itens': typeof AuthenticatedItensRoute
   '/_authenticated/montagem': typeof AuthenticatedMontagemRoute
   '/_authenticated/painel': typeof AuthenticatedPainelRoute
+  '/_authenticated/vendas': typeof AuthenticatedVendasRoute
   '/_authenticated/itens_/$id': typeof AuthenticatedItensIdRoute
 }
 export interface FileRouteTypes {
@@ -107,6 +116,7 @@ export interface FileRouteTypes {
     | '/itens'
     | '/montagem'
     | '/painel'
+    | '/vendas'
     | '/itens/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -117,6 +127,7 @@ export interface FileRouteTypes {
     | '/itens'
     | '/montagem'
     | '/painel'
+    | '/vendas'
     | '/itens/$id'
   id:
     | '__root__'
@@ -128,6 +139,7 @@ export interface FileRouteTypes {
     | '/_authenticated/itens'
     | '/_authenticated/montagem'
     | '/_authenticated/painel'
+    | '/_authenticated/vendas'
     | '/_authenticated/itens_/$id'
   fileRoutesById: FileRoutesById
 }
@@ -195,6 +207,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPainelRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/vendas': {
+      id: '/_authenticated/vendas'
+      path: '/vendas'
+      fullPath: '/vendas'
+      preLoaderRoute: typeof AuthenticatedVendasRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/itens_/$id': {
       id: '/_authenticated/itens_/$id'
       path: '/itens/$id'
@@ -211,6 +230,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedItensRoute: typeof AuthenticatedItensRoute
   AuthenticatedMontagemRoute: typeof AuthenticatedMontagemRoute
   AuthenticatedPainelRoute: typeof AuthenticatedPainelRoute
+  AuthenticatedVendasRoute: typeof AuthenticatedVendasRoute
   AuthenticatedItensIdRoute: typeof AuthenticatedItensIdRoute
 }
 
@@ -220,6 +240,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedItensRoute: AuthenticatedItensRoute,
   AuthenticatedMontagemRoute: AuthenticatedMontagemRoute,
   AuthenticatedPainelRoute: AuthenticatedPainelRoute,
+  AuthenticatedVendasRoute: AuthenticatedVendasRoute,
   AuthenticatedItensIdRoute: AuthenticatedItensIdRoute,
 }
 
