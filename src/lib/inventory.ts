@@ -44,6 +44,27 @@ export type ItemSupplier = {
   is_primary: boolean;
 };
 
+export type PurchaseRecord = {
+  id: string;
+  item_id: string;
+  supplier_id: string | null;
+  quantity: number;
+  unit_cost: number;
+  total_cost: number;
+  note: string | null;
+  user_id: string;
+  created_at: string;
+};
+
+export type Sale = {
+  id: string;
+  item_id: string;
+  quantity: number;
+  note: string | null;
+  user_id: string;
+  created_at: string;
+};
+
 export async function fetchItems(): Promise<Item[]> {
   const { data, error } = await supabase
     .from("items")
@@ -77,6 +98,30 @@ export async function fetchItemSuppliers(): Promise<ItemSupplier[]> {
     ...r,
     unit_cost: r.unit_cost === null ? null : Number(r.unit_cost),
   })) as ItemSupplier[];
+}
+
+export async function fetchPurchaseRecords(): Promise<PurchaseRecord[]> {
+  const { data, error } = await supabase
+    .from("purchase_records")
+    .select("id, item_id, supplier_id, quantity, unit_cost, total_cost, note, user_id, created_at")
+    .order("created_at", { ascending: false })
+    .limit(100);
+  if (error) throw error;
+  return (data ?? []).map((record) => ({
+    ...record,
+    unit_cost: Number(record.unit_cost),
+    total_cost: Number(record.total_cost),
+  })) as PurchaseRecord[];
+}
+
+export async function fetchSales(): Promise<Sale[]> {
+  const { data, error } = await supabase
+    .from("sales")
+    .select("id, item_id, quantity, note, user_id, created_at")
+    .order("created_at", { ascending: false })
+    .limit(100);
+  if (error) throw error;
+  return (data ?? []) as Sale[];
 }
 
 /** Índice de estrutura: pai -> linhas filhas. */
