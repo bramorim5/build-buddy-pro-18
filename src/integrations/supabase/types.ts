@@ -190,6 +190,92 @@ export type Database = {
         }
         Relationships: []
       }
+      purchase_records: {
+        Row: {
+          created_at: string
+          id: string
+          item_id: string
+          note: string | null
+          quantity: number
+          supplier_id: string | null
+          total_cost: number
+          unit_cost: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          item_id: string
+          note?: string | null
+          quantity: number
+          supplier_id?: string | null
+          total_cost: number
+          unit_cost: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          item_id?: string
+          note?: string | null
+          quantity?: number
+          supplier_id?: string | null
+          total_cost?: number
+          unit_cost?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchase_records_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_records_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sales: {
+        Row: {
+          created_at: string
+          id: string
+          item_id: string
+          note: string | null
+          quantity: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          item_id: string
+          note?: string | null
+          quantity: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          item_id?: string
+          note?: string | null
+          quantity?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       suppliers: {
         Row: {
           contact: string | null
@@ -244,6 +330,21 @@ export type Database = {
       receive_purchase: {
         Args: { p_item_id: string; p_note?: string; p_qty: number }
         Returns: undefined
+      }
+      record_purchase: {
+        Args: {
+          p_item_id: string
+          p_note?: string
+          p_qty: number
+          p_supplier_id?: string
+          p_total_cost?: number
+          p_unit_cost?: number
+        }
+        Returns: string
+      }
+      record_sale: {
+        Args: { p_item_id: string; p_note?: string; p_qty: number }
+        Returns: string
       }
     }
     Enums: {
