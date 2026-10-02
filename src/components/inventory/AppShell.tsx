@@ -1,7 +1,7 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import type { ReactNode } from "react";
-import { LayoutDashboard, Boxes, ShoppingCart, Wrench, Truck, LogOut } from "lucide-react";
+import { LayoutDashboard, Boxes, ShoppingCart, BadgeDollarSign, Wrench, Truck, LogOut } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 
@@ -9,6 +9,7 @@ const nav = [
   { to: "/painel", label: "Painel", icon: LayoutDashboard },
   { to: "/itens", label: "Itens", icon: Boxes },
   { to: "/compras", label: "Compras", icon: ShoppingCart },
+  { to: "/vendas", label: "Vendas", icon: BadgeDollarSign },
   { to: "/montagem", label: "Montagem", icon: Wrench },
   { to: "/fornecedores", label: "Fornecedores", icon: Truck },
 ] as const;
