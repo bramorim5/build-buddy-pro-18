@@ -51,7 +51,7 @@ function Vendas() {
   const itemById = new Map(items.map((item) => [item.id, item]));
   const sales = salesQuery.data ?? [];
 
-  return <div className="space-y-8">ól
+  return <div className="space-y-8">
     <div><h1 className="text-3xl font-bold">Vendas</h1><p className="mt-1 text-sm text-muted-foreground">Dê baixa em produtos finais vendidos e mantenha o histórico.</p></div>
     <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(280px,1fr)]">
       <form className="panel space-y-5 p-6" onSubmit={(event) => { event.preventDefault(); sell.mutate(); }}>
