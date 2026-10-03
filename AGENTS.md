@@ -13,3 +13,4 @@
 
 - Keep inventory data in Lovable Cloud and perform stock-changing operations through database functions, so item balances and movement history update atomically.
 - Keep authenticated application pages under the `_authenticated` route layout, so one session gate protects the operational interface.
+- Store purchase and sales details in dedicated history tables and write them through atomic inventory functions, so financial records always match stock movements.
