@@ -65,6 +65,16 @@ export type Sale = {
   created_at: string;
 };
 
+export type Movement = {
+  id: string;
+  item_id: string;
+  delta: number;
+  kind: string;
+  note: string | null;
+  user_id: string | null;
+  created_at: string;
+};
+
 export async function fetchItems(): Promise<Item[]> {
   const { data, error } = await supabase
     .from("items")
@@ -122,6 +132,16 @@ export async function fetchSales(): Promise<Sale[]> {
     .limit(100);
   if (error) throw error;
   return (data ?? []) as Sale[];
+}
+
+export async function fetchMovements(): Promise<Movement[]> {
+  const { data, error } = await supabase
+    .from("movements")
+    .select("id, item_id, delta, kind, note, user_id, created_at")
+    .order("created_at", { ascending: false })
+    .limit(100);
+  if (error) throw error;
+  return (data ?? []) as Movement[];
 }
 
 /** Índice de estrutura: pai -> linhas filhas. */
