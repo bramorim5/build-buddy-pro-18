@@ -43,6 +43,13 @@
       "when": 1790950294211,
       "tag": "0005_add_purchase_and_sales_history",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1791080682336,
+      "tag": "0006_restrict_inventory_function_execution",
+      "breakpoints": true
     }
   ]
 }
