@@ -53,6 +53,7 @@ export type PurchaseRecord = {
   total_cost: number;
   note: string | null;
   user_id: string;
+  user_name: string | null;
   created_at: string;
 };
 
@@ -62,6 +63,7 @@ export type Sale = {
   quantity: number;
   note: string | null;
   user_id: string;
+  user_name: string | null;
   created_at: string;
 };
 
@@ -113,12 +115,13 @@ export async function fetchItemSuppliers(): Promise<ItemSupplier[]> {
 export async function fetchPurchaseRecords(): Promise<PurchaseRecord[]> {
   const { data, error } = await supabase
     .from("purchase_records")
-    .select("id, item_id, supplier_id, quantity, unit_cost, total_cost, note, user_id, created_at")
+    .select("id, item_id, supplier_id, quantity, unit_cost, total_cost, note, user_id, created_at, profiles!purchase_records_user_id_profiles_fkey(name)")
     .order("created_at", { ascending: false })
     .limit(100);
   if (error) throw error;
   return (data ?? []).map((record) => ({
     ...record,
+    user_name: record.profiles?.name?.trim() || null,
     unit_cost: Number(record.unit_cost),
     total_cost: Number(record.total_cost),
   })) as PurchaseRecord[];
@@ -127,11 +130,14 @@ export async function fetchPurchaseRecords(): Promise<PurchaseRecord[]> {
 export async function fetchSales(): Promise<Sale[]> {
   const { data, error } = await supabase
     .from("sales")
-    .select("id, item_id, quantity, note, user_id, created_at")
+    .select("id, item_id, quantity, note, user_id, created_at, profiles!sales_user_id_profiles_fkey(name)")
     .order("created_at", { ascending: false })
     .limit(100);
   if (error) throw error;
-  return (data ?? []) as Sale[];
+  return (data ?? []).map((sale) => ({
+    ...sale,
+    user_name: sale.profiles?.name?.trim() || null,
+  })) as Sale[];
 }
 
 export async function fetchMovements(): Promise<Movement[]> {
