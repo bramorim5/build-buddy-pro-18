@@ -144,6 +144,35 @@ export async function fetchMovements(): Promise<Movement[]> {
   return (data ?? []) as Movement[];
 }
 
+export async function updatePurchaseRecord(id: string, quantity: number, unitCost: number, note: string) {
+  const { error } = await supabase.rpc("update_purchase_record", {
+    p_id: id,
+    p_quantity: quantity,
+    p_unit_cost: unitCost,
+    p_note: note,
+  });
+  if (error) throw error;
+}
+
+export async function deletePurchaseRecord(id: string) {
+  const { error } = await supabase.rpc("delete_purchase_record", { p_id: id });
+  if (error) throw error;
+}
+
+export async function updateSaleRecord(id: string, quantity: number, note: string) {
+  const { error } = await supabase.rpc("update_sale_record", {
+    p_id: id,
+    p_quantity: quantity,
+    p_note: note,
+  });
+  if (error) throw error;
+}
+
+export async function deleteSaleRecord(id: string) {
+  const { error } = await supabase.rpc("delete_sale_record", { p_id: id });
+  if (error) throw error;
+}
+
 /** Índice de estrutura: pai -> linhas filhas. */
 export function bomIndex(bom: BomLine[]) {
   const byParent = new Map<string, BomLine[]>();

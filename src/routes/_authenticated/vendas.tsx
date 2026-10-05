@@ -1,14 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { BadgeDollarSign, RefreshCw } from "lucide-react";
+import { BadgeDollarSign, Pencil, RefreshCw, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { fetchItems, fetchSales } from "@/lib/inventory";
+import { deleteSaleRecord, fetchItems, fetchSales, updateSaleRecord, type Sale } from "@/lib/inventory";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 export const Route = createFileRoute("/_authenticated/vendas")({
   head: () => ({ meta: [
@@ -31,6 +33,10 @@ function Vendas() {
   const [itemId, setItemId] = useState("");
   const [qty, setQty] = useState("1");
   const [note, setNote] = useState("");
+  const [editing, setEditing] = useState<Sale | null>(null);
+  const [deleting, setDeleting] = useState<Sale | null>(null);
+  const [editQty, setEditQty] = useState("");
+  const [editNote, setEditNote] = useState("");
   const selected = products.find((item) => item.id === itemId);
 
   const sell = useMutation({
@@ -47,6 +53,49 @@ function Vendas() {
     },
     onError: (error: Error) => toast.error(error.message),
   });
+
+  const refreshHistory = async () => {
+    await Promise.all([
+      qc.invalidateQueries({ queryKey: ["items"] }),
+      qc.invalidateQueries({ queryKey: ["purchase_records"] }),
+      qc.invalidateQueries({ queryKey: ["sales"] }),
+      qc.invalidateQueries({ queryKey: ["movements"] }),
+    ]);
+  };
+
+  const updateRecord = useMutation({
+    mutationFn: async () => {
+      if (!editing) throw new Error("Venda não selecionada.");
+      const quantity = Number(editQty);
+      if (!Number.isInteger(quantity) || quantity <= 0) throw new Error("Informe uma quantidade inteira maior que zero.");
+      await updateSaleRecord(editing.id, quantity, editNote.trim());
+    },
+    onSuccess: async () => {
+      setEditing(null);
+      await refreshHistory();
+      toast.success("Venda corrigida e estoque ajustado");
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
+
+  const deleteRecord = useMutation({
+    mutationFn: async () => {
+      if (!deleting) throw new Error("Venda não selecionada.");
+      await deleteSaleRecord(deleting.id);
+    },
+    onSuccess: async () => {
+      setDeleting(null);
+      await refreshHistory();
+      toast.success("Venda excluída e estoque devolvido");
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
+
+  const openEdit = (sale: Sale) => {
+    setEditing(sale);
+    setEditQty(String(sale.quantity));
+    setEditNote(sale.note ?? "");
+  };
 
   const itemById = new Map(items.map((item) => [item.id, item]));
   const sales = salesQuery.data ?? [];
@@ -65,7 +114,9 @@ function Vendas() {
     </div>
     <section className="space-y-4">
       <div className="flex items-center justify-between"><div><h2 className="text-xl font-semibold">Histórico de vendas</h2><p className="text-sm text-muted-foreground">As 100 vendas mais recentes.</p></div>{salesQuery.isError && <Button variant="outline" size="sm" onClick={() => salesQuery.refetch()}><RefreshCw />Tentar novamente</Button>}</div>
-      <div className="panel overflow-hidden">{salesQuery.isLoading ? <p className="p-6 text-sm text-muted-foreground">Carregando histórico...</p> : salesQuery.isError ? <p className="p-6 text-sm text-destructive">Não foi possível carregar o histórico.</p> : sales.length === 0 ? <p className="p-6 text-sm text-muted-foreground">Nenhuma venda registrada ainda.</p> : <div className="divide-y divide-border">{sales.map((sale) => { const item = itemById.get(sale.item_id); return <div key={sale.id} className="flex flex-wrap items-center justify-between gap-3 px-5 py-4"><div><p className="text-sm font-medium">{item?.name ?? "Produto removido"}</p><p className="text-xs text-muted-foreground">{new Date(sale.created_at).toLocaleString("pt-BR")}{sale.note ? ` · ${sale.note}` : ""}</p></div><p className="font-semibold tabular-nums">{sale.quantity} unidade(s)</p></div>; })}</div>}</div>
+      <div className="panel overflow-hidden">{salesQuery.isLoading ? <p className="p-6 text-sm text-muted-foreground">Carregando histórico...</p> : salesQuery.isError ? <p className="p-6 text-sm text-destructive">Não foi possível carregar o histórico.</p> : sales.length === 0 ? <p className="p-6 text-sm text-muted-foreground">Nenhuma venda registrada ainda.</p> : <div className="divide-y divide-border">{sales.map((sale) => { const item = itemById.get(sale.item_id); return <div key={sale.id} className="grid gap-3 px-5 py-4 sm:grid-cols-[1fr_auto_auto] sm:items-center"><div><p className="text-sm font-medium">{item?.name ?? "Produto removido"}</p><p className="text-xs text-muted-foreground">{new Date(sale.created_at).toLocaleString("pt-BR")}{sale.note ? ` · ${sale.note}` : ""}</p></div><p className="font-semibold tabular-nums">{sale.quantity} unidade(s)</p><div className="flex gap-1"><Button type="button" variant="ghost" size="icon" aria-label={`Editar venda de ${item?.name ?? "produto"}`} title="Editar venda" onClick={() => openEdit(sale)}><Pencil /></Button><Button type="button" variant="ghost" size="icon" aria-label={`Excluir venda de ${item?.name ?? "produto"}`} title="Excluir venda" onClick={() => setDeleting(sale)}><Trash2 /></Button></div></div>; })}</div>}</div>
     </section>
+    <Dialog open={editing !== null} onOpenChange={(open) => { if (!open && !updateRecord.isPending) setEditing(null); }}><DialogContent><DialogHeader><DialogTitle>Corrigir venda</DialogTitle><DialogDescription>O estoque será ajustado pela diferença entre a quantidade anterior e a nova.</DialogDescription></DialogHeader><form className="space-y-4" onSubmit={(event) => { event.preventDefault(); updateRecord.mutate(); }}><div className="space-y-2"><Label htmlFor="edit-sale-qty">Quantidade</Label><Input id="edit-sale-qty" type="number" min={1} step={1} value={editQty} onChange={(event) => setEditQty(event.target.value)} /></div><div className="space-y-2"><Label htmlFor="edit-sale-note">Observação</Label><Input id="edit-sale-note" value={editNote} onChange={(event) => setEditNote(event.target.value)} /></div><DialogFooter><Button type="button" variant="outline" onClick={() => setEditing(null)} disabled={updateRecord.isPending}>Cancelar</Button><Button type="submit" disabled={updateRecord.isPending}>{updateRecord.isPending ? "Salvando..." : "Salvar correção"}</Button></DialogFooter></form></DialogContent></Dialog>
+    <AlertDialog open={deleting !== null} onOpenChange={(open) => { if (!open && !deleteRecord.isPending) setDeleting(null); }}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Excluir esta venda?</AlertDialogTitle><AlertDialogDescription>A quantidade vendida será devolvida automaticamente ao estoque do produto.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel disabled={deleteRecord.isPending}>Cancelar</AlertDialogCancel><AlertDialogAction onClick={(event) => { event.preventDefault(); deleteRecord.mutate(); }} disabled={deleteRecord.isPending}>{deleteRecord.isPending ? "Excluindo..." : "Excluir e devolver estoque"}</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
   </div>;
 }
