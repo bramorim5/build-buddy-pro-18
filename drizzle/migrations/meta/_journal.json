@@ -64,6 +64,13 @@
       "when": 1791207808275,
       "tag": "0008_restrict_history_correction_functions",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1791212241905,
+      "tag": "0009_link_purchase_sales_to_profiles",
+      "breakpoints": true
     }
   ]
 }
