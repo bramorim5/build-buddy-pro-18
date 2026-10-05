@@ -32,10 +32,20 @@ const QUICK_PERIODS: { value: QuickPeriod; label: string }[] = [
   { value: "6m", label: "6 meses" },
   { value: "12m", label: "12 meses" },
 ];
-const MONTHS = Array.from({ length: 12 }, (_, month) => ({
-  value: String(month + 1),
-  label: new Intl.DateTimeFormat("pt-BR", { month: "long", timeZone: SAO_PAULO_TIME_ZONE }).format(new Date(Date.UTC(2024, month, 1))),
-}));
+const MONTHS = [
+  "janeiro",
+  "fevereiro",
+  "março",
+  "abril",
+  "maio",
+  "junho",
+  "julho",
+  "agosto",
+  "setembro",
+  "outubro",
+  "novembro",
+  "dezembro",
+].map((label, month) => ({ value: String(month + 1), label }));
 
 function saoPauloParts(value: string | Date) {
   const parts = new Intl.DateTimeFormat("en-CA", {
