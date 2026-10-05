@@ -14,3 +14,4 @@
 - [x] Validação dos ajustes e reversões de estoque
 - [x] Seleção mensal e períodos rápidos nos relatórios
 - [x] Validação dos relatórios por mês
+- [x] Identidade oficial e refinamento visual do acesso

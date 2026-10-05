@@ -72,37 +72,42 @@ function AuthPage() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-background px-6 py-12">
-      <div className="w-full max-w-md">
+    <main className="flex min-h-screen items-center justify-center bg-background px-6 py-10 sm:py-14">
+      <div className="w-full max-w-[28rem]">
         <header className="text-center">
           <img
             src={logoAsset.url}
             alt="Technolife Dental Excellence"
-            className="mx-auto h-auto w-full max-w-sm object-contain"
+            className="mx-auto h-auto w-full max-w-[26rem] object-contain"
           />
-          <h1 className="mt-8 text-3xl font-semibold text-foreground sm:text-4xl">
+          <h1 className="mt-9 text-3xl font-semibold text-foreground sm:text-4xl">
             Estoque Technolife
           </h1>
-          <p className="mt-2 text-sm text-muted-foreground">
+          <p className="mt-2.5 text-sm text-muted-foreground">
             {mode === "entrar" ? "Entre com seus dados de acesso." : "Crie sua conta de acesso."}
           </p>
         </header>
 
-        <form onSubmit={submit} className="mt-10 space-y-5">
+        <form onSubmit={submit} className="mt-10 space-y-6">
           {mode === "criar" && (
-            <div className="space-y-2">
-              <Label htmlFor="name">Nome</Label>
+            <div className="space-y-2.5">
+              <Label htmlFor="name" className="ml-1 text-xs font-semibold uppercase text-muted-foreground">
+                Nome
+              </Label>
               <Input
                 id="name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Seu nome"
                 autoComplete="name"
+                className="h-12 rounded-xl bg-card px-4 shadow-none focus-visible:ring-2 focus-visible:ring-ring/25"
               />
             </div>
           )}
-          <div className="space-y-2">
-            <Label htmlFor="email">E-mail</Label>
+          <div className="space-y-2.5">
+            <Label htmlFor="email" className="ml-1 text-xs font-semibold uppercase text-muted-foreground">
+              E-mail
+            </Label>
             <Input
               id="email"
               type="email"
@@ -110,10 +115,14 @@ function AuthPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               autoComplete="email"
+              placeholder="nome@exemplo.com"
+              className="h-12 rounded-xl bg-card px-4 shadow-none focus-visible:ring-2 focus-visible:ring-ring/25"
             />
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="password">Senha</Label>
+          <div className="space-y-2.5">
+            <Label htmlFor="password" className="ml-1 text-xs font-semibold uppercase text-muted-foreground">
+              Senha
+            </Label>
             <Input
               id="password"
               type="password"
@@ -122,9 +131,15 @@ function AuthPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               autoComplete={mode === "entrar" ? "current-password" : "new-password"}
+              placeholder="••••••••"
+              className="h-12 rounded-xl bg-card px-4 shadow-none focus-visible:ring-2 focus-visible:ring-ring/25"
             />
           </div>
-          <Button type="submit" className="w-full" disabled={loading}>
+          <Button
+            type="submit"
+            className="h-12 w-full rounded-xl text-sm font-semibold shadow-lg shadow-primary/15 active:scale-[0.99]"
+            disabled={loading}
+          >
             {loading ? "Aguarde..." : mode === "entrar" ? "Entrar" : "Criar conta"}
           </Button>
         </form>
@@ -132,7 +147,7 @@ function AuthPage() {
         <button
           type="button"
           onClick={() => setMode(mode === "entrar" ? "criar" : "entrar")}
-          className="mx-auto mt-6 block text-sm text-muted-foreground underline underline-offset-4 transition-colors hover:text-foreground"
+          className="mx-auto mt-7 block text-sm font-medium text-primary transition-colors hover:text-primary/80 hover:underline hover:underline-offset-4"
         >
           {mode === "entrar" ? "Não tenho conta ainda" : "Já tenho conta"}
         </button>
