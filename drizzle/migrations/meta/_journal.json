@@ -57,6 +57,13 @@
       "when": 1791161654204,
       "tag": "0007_correct_purchase_and_sale_records",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1791207808275,
+      "tag": "0008_restrict_history_correction_functions",
+      "breakpoints": true
     }
   ]
 }
