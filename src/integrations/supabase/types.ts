@@ -327,6 +327,8 @@ export type Database = {
         }
         Returns: string
       }
+      delete_purchase_record: { Args: { p_id: string }; Returns: undefined }
+      delete_sale_record: { Args: { p_id: string }; Returns: undefined }
       receive_purchase: {
         Args: { p_item_id: string; p_note?: string; p_qty: number }
         Returns: undefined
@@ -345,6 +347,19 @@ export type Database = {
       record_sale: {
         Args: { p_item_id: string; p_note?: string; p_qty: number }
         Returns: string
+      }
+      update_purchase_record: {
+        Args: {
+          p_id: string
+          p_note: string
+          p_quantity: number
+          p_unit_cost: number
+        }
+        Returns: undefined
+      }
+      update_sale_record: {
+        Args: { p_id: string; p_note: string; p_quantity: number }
+        Returns: undefined
       }
     }
     Enums: {
