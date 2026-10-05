@@ -10,5 +10,5 @@
 - [x] Validação de compras e vendas
 - [x] Página de relatórios com gráficos e filtro de período
 - [x] Validação dos relatórios contra os históricos
-- [ ] Correção e exclusão segura de compras e vendas
-- [ ] Validação dos ajustes e reversões de estoque
+- [x] Correção e exclusão segura de compras e vendas
+- [x] Validação dos ajustes e reversões de estoque
