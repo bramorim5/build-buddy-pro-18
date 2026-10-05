@@ -1,10 +1,11 @@
-import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import logoAsset from "@/assets/logo-technolife.png.asset.json";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -71,72 +72,71 @@ function AuthPage() {
   }
 
   return (
-    <div className="grid-paper flex min-h-screen items-center justify-center px-6 py-16">
+    <main className="flex min-h-screen items-center justify-center bg-background px-6 py-12">
       <div className="w-full max-w-md">
-        <Link to="/" className="font-display text-lg font-bold tracking-tight">
-          Technolife<span className="text-primary"> Estoque</span>
-        </Link>
-
-        <div className="panel mt-6 p-8">
-          <h1 className="text-2xl font-bold">
-            {mode === "entrar" ? "Entrar" : "Criar conta"}
+        <header className="text-center">
+          <img
+            src={logoAsset.url}
+            alt="Technolife Dental Excellence"
+            className="mx-auto h-auto w-full max-w-sm object-contain"
+          />
+          <h1 className="mt-8 text-3xl font-semibold text-foreground sm:text-4xl">
+            Estoque Technolife
           </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {mode === "entrar"
-              ? "Use seu e-mail e senha de acesso."
-              : "Cadastre-se para acessar o estoque."}
+          <p className="mt-2 text-sm text-muted-foreground">
+            {mode === "entrar" ? "Entre com seus dados de acesso." : "Crie sua conta de acesso."}
           </p>
+        </header>
 
-          <form onSubmit={submit} className="mt-6 space-y-4">
-            {mode === "criar" && (
-              <div className="space-y-2">
-                <Label htmlFor="name">Nome</Label>
-                <Input
-                  id="name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Seu nome"
-                  autoComplete="name"
-                />
-              </div>
-            )}
+        <form onSubmit={submit} className="mt-10 space-y-5">
+          {mode === "criar" && (
             <div className="space-y-2">
-              <Label htmlFor="email">E-mail</Label>
+              <Label htmlFor="name">Nome</Label>
               <Input
-                id="email"
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                autoComplete="email"
+                id="name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Seu nome"
+                autoComplete="name"
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Senha</Label>
-              <Input
-                id="password"
-                type="password"
-                required
-                minLength={6}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                autoComplete={mode === "entrar" ? "current-password" : "new-password"}
-              />
-            </div>
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Aguarde..." : mode === "entrar" ? "Entrar" : "Criar conta"}
-            </Button>
-          </form>
+          )}
+          <div className="space-y-2">
+            <Label htmlFor="email">E-mail</Label>
+            <Input
+              id="email"
+              type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              autoComplete="email"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="password">Senha</Label>
+            <Input
+              id="password"
+              type="password"
+              required
+              minLength={6}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              autoComplete={mode === "entrar" ? "current-password" : "new-password"}
+            />
+          </div>
+          <Button type="submit" className="w-full" disabled={loading}>
+            {loading ? "Aguarde..." : mode === "entrar" ? "Entrar" : "Criar conta"}
+          </Button>
+        </form>
 
-          <button
-            type="button"
-            onClick={() => setMode(mode === "entrar" ? "criar" : "entrar")}
-            className="mt-6 text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground"
-          >
-            {mode === "entrar" ? "Não tenho conta ainda" : "Já tenho conta"}
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={() => setMode(mode === "entrar" ? "criar" : "entrar")}
+          className="mx-auto mt-6 block text-sm text-muted-foreground underline underline-offset-4 transition-colors hover:text-foreground"
+        >
+          {mode === "entrar" ? "Não tenho conta ainda" : "Já tenho conta"}
+        </button>
       </div>
-    </div>
+    </main>
   );
 }
