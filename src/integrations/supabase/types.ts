@@ -347,6 +347,7 @@ export type Database = {
         }
         Returns: string
       }
+      delete_inventory_item: { Args: { p_item_id: string }; Returns: undefined }
       delete_purchase_record: { Args: { p_id: string }; Returns: undefined }
       delete_sale_record: { Args: { p_id: string }; Returns: undefined }
       duplicate_item: {
