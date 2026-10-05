@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { LayoutDashboard, Boxes, ShoppingCart, BadgeDollarSign, Wrench, Truck, LogOut, ChartNoAxesCombined } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import logoAsset from "@/assets/logo-technolife.png.asset.json";
 
 const nav = [
   { to: "/painel", label: "Painel", icon: LayoutDashboard },
@@ -30,11 +31,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-30 border-b border-sidebar-border bg-sidebar text-sidebar-foreground">
-        <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-6 gap-y-3 px-5 py-3">
-          <Link to="/painel" className="font-display text-base font-bold tracking-tight">
-            Technolife<span className="text-sidebar-primary"> Estoque</span>
-          </Link>
-
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-4 gap-y-3 px-5 py-3">
           <nav className="flex flex-1 flex-wrap items-center gap-1">
             {nav.map((n) => {
               const active = pathname === n.to || pathname.startsWith(n.to + "/");
@@ -63,6 +60,14 @@ export function AppShell({ children }: { children: ReactNode }) {
             <LogOut className="size-4" />
             Sair
           </button>
+
+          <Link to="/painel" aria-label="Ir para o painel" className="ml-auto shrink-0">
+            <img
+              src={logoAsset.url}
+              alt="Technolife Dental Excellence"
+              className="h-9 w-auto max-w-44 object-contain sm:h-10 sm:max-w-52"
+            />
+          </Link>
         </div>
       </header>
 
