@@ -183,6 +183,17 @@ export async function deleteSaleRecord(id: string) {
   if (error) throw error;
 }
 
+export async function duplicateItem(itemId: string, newName: string, newCode: string): Promise<string> {
+  const { data, error } = await supabase.rpc("duplicate_item", {
+    p_item_id: itemId,
+    p_new_name: newName,
+    p_new_code: newCode,
+  });
+  if (error) throw error;
+  if (!data) throw new Error("Não foi possível duplicar o item.");
+  return data;
+}
+
 /** Índice de estrutura: pai -> linhas filhas. */
 export function bomIndex(bom: BomLine[]) {
   const byParent = new Map<string, BomLine[]>();

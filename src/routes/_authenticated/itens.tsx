@@ -1,13 +1,15 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
-import { Plus, Search } from "lucide-react";
+import { Copy, Plus, Search } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import {
   fetchItems,
+  duplicateItem,
   stockStatus,
   TYPE_LABEL,
+  type Item,
   type ItemType,
 } from "@/lib/inventory";
 import { ItemPhoto } from "@/components/inventory/ItemPhoto";
@@ -61,6 +63,9 @@ function Itens() {
   const [productLine, setProductLine] = useState("");
   const [quantity, setQuantity] = useState("0");
   const [minQuantity, setMinQuantity] = useState("10");
+  const [duplicateSource, setDuplicateSource] = useState<Item | null>(null);
+  const [duplicateName, setDuplicateName] = useState("");
+  const [duplicateCode, setDuplicateCode] = useState("");
 
   const createItem = useMutation({
     mutationFn: async () => {
@@ -92,6 +97,32 @@ function Itens() {
     },
     onError: (error: Error) => toast.error(error.message),
   });
+
+  const duplicate = useMutation({
+    mutationFn: () => {
+      if (!duplicateSource) throw new Error("Selecione um item para duplicar.");
+      if (!duplicateName.trim() || !duplicateCode.trim()) {
+        throw new Error("Informe o novo nome e o novo código.");
+      }
+      return duplicateItem(duplicateSource.id, duplicateName.trim(), duplicateCode.trim());
+    },
+    onSuccess: async (id) => {
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ["items"] }),
+        qc.invalidateQueries({ queryKey: ["bom"] }),
+      ]);
+      setDuplicateSource(null);
+      toast.success("Item duplicado");
+      navigate({ to: "/itens/$id", params: { id } });
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
+
+  function openDuplicate(item: Item) {
+    setDuplicateSource(item);
+    setDuplicateName(`Cópia de ${item.name}`);
+    setDuplicateCode(`${item.code}-COPY`);
+  }
 
   const productLines = useMemo(
     () =>
@@ -234,40 +265,72 @@ function Itens() {
           list.map((i) => {
             const status = stockStatus(i);
             return (
-              <Link
-                key={i.id}
-                to="/itens/$id"
-                params={{ id: i.id }}
-                className="flex items-center gap-4 border-b border-border px-4 py-3 last:border-0 hover:bg-muted/60"
-              >
-                <ItemPhoto path={i.photo_url} alt={i.name} className="size-11 shrink-0" />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium">{i.name}</p>
-                  <p className="text-code">
-                    {i.code}
-                    {i.product_line ? ` · ${i.product_line}` : ""}
-                  </p>
-                </div>
-                <Badge variant="outline" className="hidden shrink-0 sm:inline-flex">
-                  {TYPE_LABEL[i.item_type]}
-                </Badge>
-                <div className="w-28 shrink-0 text-right">
-                  <span
-                    className={cn(
-                      "font-display text-lg font-bold tabular-nums",
-                      status === "critico" && "text-destructive",
-                      status === "baixo" && "text-warning",
-                    )}
-                  >
-                    {i.quantity}
-                  </span>
-                  <p className="text-xs text-muted-foreground">mín. {i.min_quantity}</p>
-                </div>
-              </Link>
+              <div key={i.id} className="flex items-center border-b border-border last:border-0 hover:bg-muted/60">
+                <Link
+                  to="/itens/$id"
+                  params={{ id: i.id }}
+                  className="flex min-w-0 flex-1 items-center gap-4 px-4 py-3"
+                >
+                  <ItemPhoto path={i.photo_url} alt={i.name} className="size-11 shrink-0" />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium">{i.name}</p>
+                    <p className="text-code">
+                      {i.code}
+                      {i.product_line ? ` · ${i.product_line}` : ""}
+                    </p>
+                  </div>
+                  <Badge variant="outline" className="hidden shrink-0 sm:inline-flex">
+                    {TYPE_LABEL[i.item_type]}
+                  </Badge>
+                  <div className="w-28 shrink-0 text-right">
+                    <span
+                      className={cn(
+                        "font-display text-lg font-bold tabular-nums",
+                        status === "critico" && "text-destructive",
+                        status === "baixo" && "text-warning",
+                      )}
+                    >
+                      {i.quantity}
+                    </span>
+                    <p className="text-xs text-muted-foreground">mín. {i.min_quantity}</p>
+                  </div>
+                </Link>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="mr-3 shrink-0"
+                  aria-label={`Duplicar ${i.name}`}
+                  title="Duplicar"
+                  onClick={() => openDuplicate(i)}
+                >
+                  <Copy />
+                </Button>
+              </div>
             );
           })
         )}
       </div>
+
+      <Dialog open={duplicateSource !== null} onOpenChange={(isOpen) => { if (!isOpen) setDuplicateSource(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader><DialogTitle>Duplicar item</DialogTitle></DialogHeader>
+          <form className="space-y-4" onSubmit={(event) => { event.preventDefault(); duplicate.mutate(); }}>
+            <div className="space-y-2">
+              <Label htmlFor="duplicate-name">Novo nome</Label>
+              <Input id="duplicate-name" value={duplicateName} onChange={(event) => setDuplicateName(event.target.value)} required />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="duplicate-code">Novo código</Label>
+              <Input id="duplicate-code" value={duplicateCode} onChange={(event) => setDuplicateCode(event.target.value)} required />
+            </div>
+            <Button type="submit" disabled={duplicate.isPending}>
+              <Copy />
+              {duplicate.isPending ? "Duplicando..." : "Duplicar item"}
+            </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
