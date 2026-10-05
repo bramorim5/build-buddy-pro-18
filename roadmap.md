@@ -16,3 +16,4 @@
 - [x] Validação dos relatórios por mês
 - [x] Identidade oficial e refinamento visual do acesso
 - [x] Preço opcional e valor total no histórico de vendas
+- [x] Duplicação completa de itens com estrutura, fornecedores e foto
