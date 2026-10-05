@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { assembleNow, bomIndex, buildableCount, fetchBom, fetchItemSuppliers, fetchItems, stockStatus, TYPE_LABEL, type Item } from "@/lib/inventory";
+import { assembleNow, bomIndex, buildableCount, deleteInventoryItem, fetchBom, fetchItems, stockStatus, TYPE_LABEL, type Item } from "@/lib/inventory";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -23,7 +23,6 @@ export function ItemStockSection({ itemId }: ItemStockSectionProps) {
   const navigate = useNavigate();
   const { data: items = [] } = useQuery({ queryKey: ["items"], queryFn: fetchItems });
   const { data: bom = [] } = useQuery({ queryKey: ["bom"], queryFn: fetchBom });
-  const { data: itemSuppliers = [] } = useQuery({ queryKey: ["item_suppliers"], queryFn: fetchItemSuppliers });
   const { data: movements = [] } = useQuery({
     queryKey: ["movements", itemId],
     queryFn: async () => {
@@ -37,7 +36,6 @@ export function ItemStockSection({ itemId }: ItemStockSectionProps) {
   const { byParent, byChild } = bomIndex(bom);
   const lines = byParent.get(itemId) ?? [];
   const usedIn = byChild.get(itemId) ?? [];
-  const linkedSuppliers = itemSuppliers.filter((supplier) => supplier.item_id === itemId);
   const [desc, setDesc] = useState<string | null>(null);
   const [minQty, setMinQty] = useState<string | null>(null);
   const [editOpen, setEditOpen] = useState(false);
@@ -63,12 +61,19 @@ export function ItemStockSection({ itemId }: ItemStockSectionProps) {
     onError: (error: Error) => toast.error(error.message),
   });
   const deleteItem = useMutation({
-    mutationFn: async () => {
-      if (lines.length || usedIn.length || linkedSuppliers.length || movements.length) throw new Error("Este item possui estrutura, fornecedor ou histórico. Retire esses vínculos antes de excluí-lo.");
-      const { error } = await supabase.from("items").delete().eq("id", itemId);
-      if (error) throw error;
+    mutationFn: () => deleteInventoryItem(itemId),
+    onSuccess: async () => {
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ["items"] }),
+        qc.invalidateQueries({ queryKey: ["bom"] }),
+        qc.invalidateQueries({ queryKey: ["item_suppliers"] }),
+        qc.invalidateQueries({ queryKey: ["movements"] }),
+        qc.invalidateQueries({ queryKey: ["purchase_records"] }),
+        qc.invalidateQueries({ queryKey: ["sales"] }),
+      ]);
+      toast.success("Item excluído");
+      navigate({ to: "/itens" });
     },
-    onSuccess: async () => { await qc.invalidateQueries({ queryKey: ["items"] }); toast.success("Item excluído"); navigate({ to: "/itens" }); },
     onError: (error: Error) => toast.error(error.message),
   });
 
@@ -91,7 +96,7 @@ export function ItemStockSection({ itemId }: ItemStockSectionProps) {
             <DialogTrigger asChild><Button variant="outline" onClick={() => { setEditName(item.name); setEditCode(item.code); setEditType(item.item_type); setEditLine(item.product_line ?? ""); }}><Pencil />Editar</Button></DialogTrigger>
             <DialogContent><DialogHeader><DialogTitle>Editar item</DialogTitle></DialogHeader><form className="space-y-4" onSubmit={(event) => { event.preventDefault(); save.mutate({ name: editName.trim(), code: editCode.trim(), item_type: editType, product_line: editLine.trim() || null }, { onSuccess: () => setEditOpen(false) }); }}><div className="grid gap-4 sm:grid-cols-2"><div className="space-y-2"><Label htmlFor="edit-code">Código</Label><Input id="edit-code" value={editCode} onChange={(event) => setEditCode(event.target.value)} required /></div><div className="space-y-2"><Label>Tipo</Label><Select value={editType} onValueChange={(value) => setEditType(value as Item["item_type"])}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="material">Peça / material</SelectItem><SelectItem value="submontagem">Submontagem</SelectItem><SelectItem value="produto">Produto final</SelectItem></SelectContent></Select></div></div><div className="space-y-2"><Label htmlFor="edit-name">Nome</Label><Input id="edit-name" value={editName} onChange={(event) => setEditName(event.target.value)} required /></div><div className="space-y-2"><Label htmlFor="edit-line">Linha de produto</Label><Input id="edit-line" value={editLine} onChange={(event) => setEditLine(event.target.value)} /></div><Button type="submit" disabled={save.isPending || !editName.trim() || !editCode.trim()}>{save.isPending ? "Salvando..." : "Salvar alterações"}</Button></form></DialogContent>
           </Dialog>
-          <AlertDialog><AlertDialogTrigger asChild><Button variant="destructive" size="icon" aria-label="Excluir item"><Trash2 /></Button></AlertDialogTrigger><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Excluir {item.name}?</AlertDialogTitle><AlertDialogDescription>Esta ação é permanente. Itens vinculados a estruturas, fornecedores ou históricos não podem ser excluídos.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancelar</AlertDialogCancel><AlertDialogAction onClick={() => deleteItem.mutate()} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Excluir</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
+          <AlertDialog><AlertDialogTrigger asChild><Button variant="destructive" size="icon" aria-label="Excluir item"><Trash2 /></Button></AlertDialogTrigger><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Excluir {item.name}?</AlertDialogTitle><AlertDialogDescription>Esta ação é permanente e também remove o histórico de estoque, compras, vendas, fornecedores e vínculos de estrutura deste item.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancelar</AlertDialogCancel><AlertDialogAction disabled={deleteItem.isPending} onClick={() => deleteItem.mutate()} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">{deleteItem.isPending ? "Excluindo..." : "Excluir definitivamente"}</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
         </div>
       </div>
       <div className="grid gap-4 sm:grid-cols-3">

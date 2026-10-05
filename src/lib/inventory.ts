@@ -194,6 +194,11 @@ export async function duplicateItem(itemId: string, newName: string, newCode: st
   return data;
 }
 
+export async function deleteInventoryItem(itemId: string) {
+  const { error } = await supabase.rpc("delete_inventory_item", { p_item_id: itemId });
+  if (error) throw error;
+}
+
 /** Índice de estrutura: pai -> linhas filhas. */
 export function bomIndex(bom: BomLine[]) {
   const byParent = new Map<string, BomLine[]>();
