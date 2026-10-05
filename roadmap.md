@@ -12,3 +12,5 @@
 - [x] Validação dos relatórios contra os históricos
 - [x] Correção e exclusão segura de compras e vendas
 - [x] Validação dos ajustes e reversões de estoque
+- [x] Seleção mensal e períodos rápidos nos relatórios
+- [x] Validação dos relatórios por mês
