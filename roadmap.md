@@ -15,3 +15,4 @@
 - [x] Seleção mensal e períodos rápidos nos relatórios
 - [x] Validação dos relatórios por mês
 - [x] Identidade oficial e refinamento visual do acesso
+- [x] Preço opcional e valor total no histórico de vendas

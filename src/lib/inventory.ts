@@ -61,6 +61,8 @@ export type Sale = {
   id: string;
   item_id: string;
   quantity: number;
+  unit_price: number | null;
+  total_cost: number | null;
   note: string | null;
   user_id: string;
   user_name: string | null;
@@ -130,13 +132,15 @@ export async function fetchPurchaseRecords(): Promise<PurchaseRecord[]> {
 export async function fetchSales(): Promise<Sale[]> {
   const { data, error } = await supabase
     .from("sales")
-    .select("id, item_id, quantity, note, user_id, created_at, profiles!sales_user_id_profiles_fkey(name)")
+    .select("id, item_id, quantity, unit_price, total_cost, note, user_id, created_at, profiles!sales_user_id_profiles_fkey(name)")
     .order("created_at", { ascending: false })
     .limit(100);
   if (error) throw error;
   return (data ?? []).map((sale) => ({
     ...sale,
     user_name: sale.profiles?.name?.trim() || null,
+    unit_price: sale.unit_price === null ? null : Number(sale.unit_price),
+    total_cost: sale.total_cost === null ? null : Number(sale.total_cost),
   })) as Sale[];
 }
 

@@ -255,6 +255,8 @@ export type Database = {
           item_id: string
           note: string | null
           quantity: number
+          total_cost: number | null
+          unit_price: number | null
           user_id: string
         }
         Insert: {
@@ -263,6 +265,8 @@ export type Database = {
           item_id: string
           note?: string | null
           quantity: number
+          total_cost?: number | null
+          unit_price?: number | null
           user_id: string
         }
         Update: {
@@ -271,6 +275,8 @@ export type Database = {
           item_id?: string
           note?: string | null
           quantity?: number
+          total_cost?: number | null
+          unit_price?: number | null
           user_id?: string
         }
         Relationships: [
@@ -359,7 +365,12 @@ export type Database = {
         Returns: string
       }
       record_sale: {
-        Args: { p_item_id: string; p_note?: string; p_qty: number }
+        Args: {
+          p_item_id: string
+          p_note?: string
+          p_qty: number
+          p_unit_price?: number
+        }
         Returns: string
       }
       update_purchase_record: {
