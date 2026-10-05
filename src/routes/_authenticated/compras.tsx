@@ -1,14 +1,16 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
-import { PackagePlus, RefreshCw, ShoppingCart } from "lucide-react";
+import { PackagePlus, Pencil, RefreshCw, ShoppingCart, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { brl, fetchItems, fetchItemSuppliers, fetchPurchaseRecords, fetchSuppliers } from "@/lib/inventory";
+import { brl, deletePurchaseRecord, fetchItems, fetchItemSuppliers, fetchPurchaseRecords, fetchSuppliers, updatePurchaseRecord, type PurchaseRecord } from "@/lib/inventory";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 export const Route = createFileRoute("/_authenticated/compras")({
   head: () => ({ meta: [
@@ -37,6 +39,11 @@ function Compras() {
   const [valueMode, setValueMode] = useState<"total" | "unit">("total");
   const [paidValue, setPaidValue] = useState("");
   const [note, setNote] = useState("");
+  const [editing, setEditing] = useState<PurchaseRecord | null>(null);
+  const [deleting, setDeleting] = useState<PurchaseRecord | null>(null);
+  const [editQty, setEditQty] = useState("");
+  const [editUnitCost, setEditUnitCost] = useState("");
+  const [editNote, setEditNote] = useState("");
 
   const selected = items.find((item) => item.id === itemId);
   const amount = Number(qty);
@@ -73,6 +80,52 @@ function Compras() {
     onError: (error: Error) => toast.error(error.message),
   });
 
+  const refreshHistory = async () => {
+    await Promise.all([
+      qc.invalidateQueries({ queryKey: ["items"] }),
+      qc.invalidateQueries({ queryKey: ["purchase_records"] }),
+      qc.invalidateQueries({ queryKey: ["sales"] }),
+      qc.invalidateQueries({ queryKey: ["movements"] }),
+    ]);
+  };
+
+  const updateRecord = useMutation({
+    mutationFn: async () => {
+      if (!editing) throw new Error("Compra não selecionada.");
+      const quantity = Number(editQty);
+      const unitCost = Number(editUnitCost.replace(",", "."));
+      if (!Number.isInteger(quantity) || quantity <= 0) throw new Error("Informe uma quantidade inteira maior que zero.");
+      if (!Number.isFinite(unitCost) || unitCost < 0 || editUnitCost.trim() === "") throw new Error("Informe um custo unitário válido.");
+      await updatePurchaseRecord(editing.id, quantity, unitCost, editNote.trim());
+    },
+    onSuccess: async () => {
+      setEditing(null);
+      await refreshHistory();
+      toast.success("Compra corrigida e estoque ajustado");
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
+
+  const deleteRecord = useMutation({
+    mutationFn: async () => {
+      if (!deleting) throw new Error("Compra não selecionada.");
+      await deletePurchaseRecord(deleting.id);
+    },
+    onSuccess: async () => {
+      setDeleting(null);
+      await refreshHistory();
+      toast.success("Compra excluída e estoque revertido");
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
+
+  const openEdit = (record: PurchaseRecord) => {
+    setEditing(record);
+    setEditQty(String(record.quantity));
+    setEditUnitCost(String(record.unit_cost));
+    setEditNote(record.note ?? "");
+  };
+
   const history = historyQuery.data ?? [];
   const itemById = new Map(items.map((item) => [item.id, item]));
   const supplierById = new Map(suppliers.map((supplier) => [supplier.id, supplier]));
@@ -100,7 +153,9 @@ function Compras() {
     </div>
     <section className="space-y-4">
       <div className="flex items-center justify-between"><div><h2 className="text-xl font-semibold">Histórico de compras</h2><p className="text-sm text-muted-foreground">As 100 compras mais recentes.</p></div>{historyQuery.isError && <Button variant="outline" size="sm" onClick={() => historyQuery.refetch()}><RefreshCw />Tentar novamente</Button>}</div>
-      <div className="panel overflow-hidden">{historyQuery.isLoading ? <p className="p-6 text-sm text-muted-foreground">Carregando histórico...</p> : historyQuery.isError ? <p className="p-6 text-sm text-destructive">Não foi possível carregar o histórico.</p> : history.length === 0 ? <p className="p-6 text-sm text-muted-foreground">Nenhuma compra registrada ainda.</p> : <div className="divide-y divide-border">{history.map((record) => { const item = itemById.get(record.item_id); const supplier = record.supplier_id ? supplierById.get(record.supplier_id) : undefined; return <div key={record.id} className="grid gap-2 px-5 py-4 sm:grid-cols-[1fr_auto] sm:items-center"><div><p className="text-sm font-medium">{item?.name ?? "Item removido"}</p><p className="text-xs text-muted-foreground">{new Date(record.created_at).toLocaleString("pt-BR")} · {supplier?.name ?? "Sem fornecedor"}{record.note ? ` · ${record.note}` : ""}</p></div><div className="text-left sm:text-right"><p className="font-semibold">{brl(record.total_cost)}</p><p className="text-xs text-muted-foreground">{record.quantity} un. · {brl(record.unit_cost)} cada</p></div></div>; })}</div>}</div>
+      <div className="panel overflow-hidden">{historyQuery.isLoading ? <p className="p-6 text-sm text-muted-foreground">Carregando histórico...</p> : historyQuery.isError ? <p className="p-6 text-sm text-destructive">Não foi possível carregar o histórico.</p> : history.length === 0 ? <p className="p-6 text-sm text-muted-foreground">Nenhuma compra registrada ainda.</p> : <div className="divide-y divide-border">{history.map((record) => { const item = itemById.get(record.item_id); const supplier = record.supplier_id ? supplierById.get(record.supplier_id) : undefined; return <div key={record.id} className="grid gap-3 px-5 py-4 sm:grid-cols-[1fr_auto_auto] sm:items-center"><div><p className="text-sm font-medium">{item?.name ?? "Item removido"}</p><p className="text-xs text-muted-foreground">{new Date(record.created_at).toLocaleString("pt-BR")} · {supplier?.name ?? "Sem fornecedor"}{record.note ? ` · ${record.note}` : ""}</p></div><div className="text-left sm:text-right"><p className="font-semibold">{brl(record.total_cost)}</p><p className="text-xs text-muted-foreground">{record.quantity} un. · {brl(record.unit_cost)} cada</p></div><div className="flex gap-1"><Button type="button" variant="ghost" size="icon" aria-label={`Editar compra de ${item?.name ?? "item"}`} title="Editar compra" onClick={() => openEdit(record)}><Pencil /></Button><Button type="button" variant="ghost" size="icon" aria-label={`Excluir compra de ${item?.name ?? "item"}`} title="Excluir compra" onClick={() => setDeleting(record)}><Trash2 /></Button></div></div>; })}</div>}</div>
     </section>
+    <Dialog open={editing !== null} onOpenChange={(open) => { if (!open && !updateRecord.isPending) setEditing(null); }}><DialogContent><DialogHeader><DialogTitle>Corrigir compra</DialogTitle><DialogDescription>O saldo do item será ajustado apenas pela diferença da quantidade.</DialogDescription></DialogHeader><form className="space-y-4" onSubmit={(event) => { event.preventDefault(); updateRecord.mutate(); }}><div className="space-y-2"><Label htmlFor="edit-purchase-qty">Quantidade</Label><Input id="edit-purchase-qty" type="number" min={1} step={1} value={editQty} onChange={(event) => setEditQty(event.target.value)} /></div><div className="space-y-2"><Label htmlFor="edit-purchase-cost">Custo unitário</Label><Input id="edit-purchase-cost" type="number" min={0} step="0.0001" value={editUnitCost} onChange={(event) => setEditUnitCost(event.target.value)} /></div><div className="space-y-2"><Label htmlFor="edit-purchase-note">Observação</Label><Input id="edit-purchase-note" value={editNote} onChange={(event) => setEditNote(event.target.value)} /></div><DialogFooter><Button type="button" variant="outline" onClick={() => setEditing(null)} disabled={updateRecord.isPending}>Cancelar</Button><Button type="submit" disabled={updateRecord.isPending}>{updateRecord.isPending ? "Salvando..." : "Salvar correção"}</Button></DialogFooter></form></DialogContent></Dialog>
+    <AlertDialog open={deleting !== null} onOpenChange={(open) => { if (!open && !deleteRecord.isPending) setDeleting(null); }}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Excluir esta compra?</AlertDialogTitle><AlertDialogDescription>A quantidade desta compra será retirada do estoque. A exclusão será bloqueada se o saldo ficar negativo.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel disabled={deleteRecord.isPending}>Cancelar</AlertDialogCancel><AlertDialogAction onClick={(event) => { event.preventDefault(); deleteRecord.mutate(); }} disabled={deleteRecord.isPending}>{deleteRecord.isPending ? "Excluindo..." : "Excluir e reverter estoque"}</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
   </div>;
 }
