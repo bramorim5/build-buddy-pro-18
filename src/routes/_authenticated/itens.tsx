@@ -41,9 +41,9 @@ export const Route = createFileRoute("/_authenticated/itens")({
 
 const filters: Array<{ value: "todos" | ItemType; label: string }> = [
   { value: "todos", label: "Todos" },
-  { value: "produto", label: "Produtos finais" },
-  { value: "submontagem", label: "Submontagens" },
-  { value: "material", label: "Materiais" },
+  { value: "material", label: TYPE_LABEL.material },
+  { value: "submontagem", label: TYPE_LABEL.submontagem },
+  { value: "produto", label: TYPE_LABEL.produto },
 ];
 
 function Itens() {
@@ -52,6 +52,7 @@ function Itens() {
   const { data: items = [], isLoading } = useQuery({ queryKey: ["items"], queryFn: fetchItems });
   const [q, setQ] = useState("");
   const [type, setType] = useState<"todos" | ItemType>("todos");
+  const [line, setLine] = useState("todas");
   const [onlyAlerts, setOnlyAlerts] = useState(false);
   const [open, setOpen] = useState(false);
   const [code, setCode] = useState("");
@@ -92,19 +93,37 @@ function Itens() {
     onError: (error: Error) => toast.error(error.message),
   });
 
+  const productLines = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          items
+            .map((item) => item.product_line?.trim())
+            .filter((value): value is string => Boolean(value)),
+        ),
+      ).sort((a, b) => a.localeCompare(b, "pt-BR")),
+    [items],
+  );
+
   const list = useMemo(() => {
     const term = q.trim().toLowerCase();
     return items.filter((i) => {
       if (type !== "todos" && i.item_type !== type) return false;
+      if (line !== "todas" && i.product_line?.trim() !== line) return false;
       if (onlyAlerts && stockStatus(i) === "ok") return false;
       if (!term) return true;
-      return (
-        i.name.toLowerCase().includes(term) ||
-        i.code.toLowerCase().includes(term) ||
-        (i.product_line ?? "").toLowerCase().includes(term)
-      );
+      return i.name.toLowerCase().includes(term) || i.code.toLowerCase().includes(term);
     });
-  }, [items, q, type, onlyAlerts]);
+  }, [items, q, type, line, onlyAlerts]);
+
+  const hasActiveFilters = q.trim() !== "" || type !== "todos" || line !== "todas" || onlyAlerts;
+
+  function clearFilters() {
+    setQ("");
+    setType("todos");
+    setLine("todas");
+    setOnlyAlerts(false);
+  }
 
   return (
     <div className="space-y-6">
@@ -136,7 +155,8 @@ function Itens() {
         </Dialog>
       </div>
 
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="space-y-3">
+        <div className="flex flex-wrap items-center gap-3">
         <div className="relative min-w-64 flex-1">
           <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
@@ -146,32 +166,57 @@ function Itens() {
             className="pl-9"
           />
         </div>
-        <div className="flex flex-wrap gap-1">
+          <Select value={line} onValueChange={setLine}>
+            <SelectTrigger className="w-full sm:w-56" aria-label="Linha de produto">
+              <SelectValue placeholder="Todas as linhas" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todas">Todas as linhas</SelectItem>
+              {productLines.map((productLineOption) => (
+                <SelectItem key={productLineOption} value={productLineOption}>
+                  {productLineOption}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap gap-2">
           {filters.map((f) => (
-            <button
+            <Button
               key={f.value}
-              onClick={() => setType(f.value)}
-              className={cn(
-                "rounded-md px-3 py-2 text-sm font-medium transition-colors",
-                type === f.value
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:bg-muted",
-              )}
+              type="button"
+              size="sm"
+              variant={type === f.value ? "default" : "outline"}
+              className="h-7 px-2.5 text-xs"
+              aria-pressed={type === f.value}
+              onClick={() => setType(type === f.value && f.value !== "todos" ? "todos" : f.value)}
             >
               {f.label}
-            </button>
+            </Button>
           ))}
-          <button
+          <Button
+            type="button"
+            size="sm"
+            variant={onlyAlerts ? "default" : "outline"}
             onClick={() => setOnlyAlerts((v) => !v)}
-            className={cn(
-              "rounded-md px-3 py-2 text-sm font-medium transition-colors",
-              onlyAlerts
-                ? "bg-warning text-warning-foreground"
-                : "text-muted-foreground hover:bg-muted",
-            )}
+            className={cn("h-7 px-2.5 text-xs", onlyAlerts && "bg-warning text-warning-foreground hover:bg-warning/90")}
+            aria-pressed={onlyAlerts}
           >
             Só alertas
-          </button>
+          </Button>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="text-sm text-muted-foreground">
+              {list.length} de {items.length} itens
+            </span>
+            {hasActiveFilters && (
+              <Button type="button" variant="ghost" size="sm" onClick={clearFilters}>
+                Limpar filtros
+              </Button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -179,7 +224,12 @@ function Itens() {
         {isLoading ? (
           <p className="px-5 py-10 text-sm text-muted-foreground">Carregando...</p>
         ) : list.length === 0 ? (
-          <p className="px-5 py-10 text-sm text-muted-foreground">Nenhum item encontrado.</p>
+          <div className="flex flex-col items-start gap-3 px-5 py-10">
+            <p className="text-sm text-muted-foreground">Nenhum item encontrado com esses filtros</p>
+            <Button type="button" variant="outline" size="sm" onClick={clearFilters}>
+              Limpar filtros
+            </Button>
+          </div>
         ) : (
           list.map((i) => {
             const status = stockStatus(i);
