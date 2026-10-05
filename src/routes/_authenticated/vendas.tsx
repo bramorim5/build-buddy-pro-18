@@ -46,7 +46,7 @@ function Vendas() {
       if (!itemId || !Number.isInteger(amount) || amount <= 0) throw new Error("Informe uma quantidade inteira maior que zero.");
       const price = unitPrice.trim() === "" ? null : Number(unitPrice);
       if (price !== null && (!Number.isFinite(price) || price < 0)) throw new Error("Informe um preço válido.");
-      const { error } = await supabase.rpc("record_sale", { p_item_id: itemId, p_qty: amount, p_unit_price: price, ...(note.trim() ? { p_note: note.trim() } : {}) });
+      const { error } = await supabase.rpc("record_sale", { p_item_id: itemId, p_qty: amount, ...(price === null ? {} : { p_unit_price: price }), ...(note.trim() ? { p_note: note.trim() } : {}) });
       if (error) throw error;
     },
     onSuccess: async () => {
