@@ -53,7 +53,7 @@ function Itens() {
   const navigate = useNavigate();
   const { data: items = [], isLoading } = useQuery({ queryKey: ["items"], queryFn: fetchItems });
   const [q, setQ] = useState("");
-  const [type, setType] = useState<"todos" | ItemType>("todos");
+  const [type, setType] = useState<"todos" | ItemType>("produto");
   const [line, setLine] = useState("todas");
   const [onlyAlerts, setOnlyAlerts] = useState(false);
   const [open, setOpen] = useState(false);
