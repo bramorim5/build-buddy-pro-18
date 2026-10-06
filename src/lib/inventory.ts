@@ -54,6 +54,10 @@ export type PurchaseRecord = {
   note: string | null;
   user_id: string;
   user_name: string | null;
+  expected_delivery_date: string | null;
+  delivered: boolean;
+  delivered_at: string | null;
+  delivered_by: string | null;
   created_at: string;
 };
 
@@ -117,7 +121,7 @@ export async function fetchItemSuppliers(): Promise<ItemSupplier[]> {
 export async function fetchPurchaseRecords(): Promise<PurchaseRecord[]> {
   const { data, error } = await supabase
     .from("purchase_records")
-    .select("id, item_id, supplier_id, quantity, unit_cost, total_cost, note, user_id, created_at, profiles!purchase_records_user_id_profiles_fkey(name)")
+    .select("id, item_id, supplier_id, quantity, unit_cost, total_cost, note, user_id, expected_delivery_date, delivered, delivered_at, delivered_by, created_at, profiles!purchase_records_user_id_profiles_fkey(name)")
     .order("created_at", { ascending: false })
     .limit(100);
   if (error) throw error;
@@ -127,6 +131,28 @@ export async function fetchPurchaseRecords(): Promise<PurchaseRecord[]> {
     unit_cost: Number(record.unit_cost),
     total_cost: Number(record.total_cost),
   })) as PurchaseRecord[];
+}
+
+export async function recordPurchase(input: {
+  itemId: string;
+  quantity: number;
+  supplierId?: string;
+  unitCost?: number;
+  totalCost?: number;
+  note?: string;
+  expectedDeliveryDate?: string;
+}) {
+  const { data, error } = await supabase.rpc("record_purchase", {
+    p_item_id: input.itemId,
+    p_qty: input.quantity,
+    ...(input.supplierId ? { p_supplier_id: input.supplierId } : {}),
+    ...(input.unitCost !== undefined ? { p_unit_cost: input.unitCost } : {}),
+    ...(input.totalCost !== undefined ? { p_total_cost: input.totalCost } : {}),
+    ...(input.note ? { p_note: input.note } : {}),
+    ...(input.expectedDeliveryDate ? { p_expected_delivery_date: input.expectedDeliveryDate } : {}),
+  });
+  if (error) throw error;
+  return data;
 }
 
 export async function fetchSales(): Promise<Sale[]> {
@@ -154,13 +180,24 @@ export async function fetchMovements(): Promise<Movement[]> {
   return (data ?? []) as Movement[];
 }
 
-export async function updatePurchaseRecord(id: string, quantity: number, unitCost: number, note: string) {
+export async function updatePurchaseRecord(id: string, quantity: number, unitCost: number, note: string, expectedDeliveryDate: string | null) {
   const { error } = await supabase.rpc("update_purchase_record", {
     p_id: id,
     p_quantity: quantity,
     p_unit_cost: unitCost,
     p_note: note,
+    p_expected_delivery_date: expectedDeliveryDate,
   });
+  if (error) throw error;
+}
+
+export async function markPurchaseDelivered(id: string) {
+  const { error } = await supabase.rpc("mark_purchase_delivered", { p_id: id });
+  if (error) throw error;
+}
+
+export async function reopenPurchaseDelivery(id: string) {
+  const { error } = await supabase.rpc("reopen_purchase_delivery", { p_id: id });
   if (error) throw error;
 }
 

@@ -193,6 +193,10 @@ export type Database = {
       purchase_records: {
         Row: {
           created_at: string
+          delivered: boolean
+          delivered_at: string | null
+          delivered_by: string | null
+          expected_delivery_date: string | null
           id: string
           item_id: string
           note: string | null
@@ -204,6 +208,10 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          delivered?: boolean
+          delivered_at?: string | null
+          delivered_by?: string | null
+          expected_delivery_date?: string | null
           id?: string
           item_id: string
           note?: string | null
@@ -215,6 +223,10 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          delivered?: boolean
+          delivered_at?: string | null
+          delivered_by?: string | null
+          expected_delivery_date?: string | null
           id?: string
           item_id?: string
           note?: string | null
@@ -225,6 +237,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "purchase_records_delivered_by_profiles_fkey"
+            columns: ["delivered_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "purchase_records_item_id_fkey"
             columns: ["item_id"]
@@ -354,12 +373,14 @@ export type Database = {
         Args: { p_item_id: string; p_new_code: string; p_new_name: string }
         Returns: string
       }
+      mark_purchase_delivered: { Args: { p_id: string }; Returns: undefined }
       receive_purchase: {
         Args: { p_item_id: string; p_note?: string; p_qty: number }
         Returns: undefined
       }
       record_purchase: {
         Args: {
+          p_expected_delivery_date?: string
           p_item_id: string
           p_note?: string
           p_qty: number
@@ -378,8 +399,10 @@ export type Database = {
         }
         Returns: string
       }
+      reopen_purchase_delivery: { Args: { p_id: string }; Returns: undefined }
       update_purchase_record: {
         Args: {
+          p_expected_delivery_date?: string
           p_id: string
           p_note: string
           p_quantity: number
